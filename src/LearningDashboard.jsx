@@ -469,6 +469,7 @@ function GlobalStyles({ theme }) {
       .font-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
       .font-mono { font-family: 'JetBrains Mono', monospace; font-feature-settings: "zero"; }
       .serif { font-family: 'Fraunces', serif; }
+      button { color: inherit; }
       .btn-t { transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1); }
       .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
       .custom-scroll::-webkit-scrollbar-track { background: transparent; }
