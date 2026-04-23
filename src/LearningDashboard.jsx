@@ -415,15 +415,15 @@ export default function LearningDashboard() {
   const setMockInterview = (month, type, count) => setState(s => ({ ...s, mockInterviews: { ...s.mockInterviews, [`${month}-${type}`]: count } }));
   const setDayNote = (date, text) => setState(s => ({ ...s, customNotes: { ...s.customNotes, [date]: text } }));
 
+  const theme = THEMES[state.theme] || THEMES.light;
+
   if (!loaded) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f4f0e8', color: '#1a1814', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: theme.bg, color: theme.ink, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ letterSpacing: '0.2em', textTransform: 'uppercase', fontSize: 11, opacity: 0.6 }}>Loading plan</div>
       </div>
     );
   }
-
-  const theme = THEMES[state.theme] || THEMES.light;
   const toggleTheme = () => update({ theme: state.theme === 'light' ? 'dark' : 'light' });
 
   return (
