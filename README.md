@@ -8,8 +8,8 @@ A 12-month learning plan tracker designed around Educative Premium Plus. Editori
 
 ## What it tracks
 
-- **9 courses** across 4 phases, with per-module checkboxes and inline notes
-- **28 coding patterns** (Grokking the Coding Interview in Python) with per-pattern notes
+- **9 courses** across 4 phases, with per-module checkboxes
+- **28 coding patterns** with per-pattern notes and explicit per-month targeting
 - **14 LLD problems** and **15 system design case studies** with notes per item
 - **24+ AWS cloud labs** grouped by category
 - **~45 mock interviews** with per-month targets
@@ -17,7 +17,16 @@ A 12-month learning plan tracker designed around Educative Premium Plus. Editori
 - **In-browser compiler** — Python (Pyodide), TypeScript (tsc), C# (Monaco editor + .NET Fiddle handoff)
 - **Light & dark themes** with custom Monaco themes that match the dashboard aesthetic
 
-All progress persists to `localStorage`.
+## What's new in v2
+
+- **"This week · do these"** panel on the Overview — literal, actionable objectives derived from your progress (exact patterns, exact next course module, exact next lab). No more vague phase descriptions.
+- **Slide-out notes editor** — a file-editor-style side panel for every course, pattern, lab, LLD problem, and SD case. Click any "Note" button.
+- **Searchable Notes index** — every note in one place, filterable by kind, full-text searchable.
+- **SQLite persistence** via sql.js — full state + notes live in a SQLite database (backed by IndexedDB). Export as a `.sqlite` file and restore on any other machine.
+- **Phase-aware weekly rhythm** — the rhythm card adapts to your current phase.
+- **[`LEARNING_PLAN.md`](./LEARNING_PLAN.md)** — the source-of-truth playbook with exit criteria, pacing rules, and failure modes.
+
+All progress persists to SQLite-in-IndexedDB. First-run migration from the v1 `localStorage` shape is automatic.
 
 ---
 
@@ -91,9 +100,48 @@ Intentionally single-file for the dashboard. You can absolutely split it later �
 
 ## Architecture
 
+### Project layout (v2)
+
+```
+src/
+├── LearningDashboard.jsx        # Root: composes header, views, modals, NotePanel
+├── theme.jsx                    # THEMES + ThemeContext + useTheme
+├── data/
+│   └── plan.js                  # COURSES, PATTERNS, LABS, PHASES, WEEKLY_CADENCE, DAILY_RHYTHM, ...
+├── lib/
+│   ├── utils.js                 # date helpers + computeStats
+│   └── objectives.js            # the "Now/This week" engine — derives literal objectives from state
+├── storage/
+│   └── db.js                    # sql.js + IndexedDB; readNote/writeNote/exportSqlite/importSqlite
+├── components/
+│   ├── GlobalStyles.jsx
+│   ├── Header.jsx               # + Footer
+│   ├── common.jsx               # Stat, BigStat, Checkbox, FilterChip, SectionHeader, TabBtn, NoteTextarea
+│   ├── NotePanel.jsx            # the slide-out file-editor notes drawer
+│   └── SessionModal.jsx
+└── views/
+    ├── OverviewView.jsx         # includes the "This week · do these" panel + phase-aware rhythm card
+    ├── CoursesView.jsx
+    ├── PatternsView.jsx
+    ├── DesignView.jsx
+    ├── LabsView.jsx
+    ├── MocksView.jsx
+    ├── CalendarView.jsx
+    ├── NotesView.jsx            # NEW — searchable index of every note in the DB
+    ├── SettingsView.jsx         # includes .sqlite export/restore
+    └── CompilerView.jsx
+```
+
 ### State & storage
 
-All progress lives in a single `state` object at the root component, persisted to `localStorage` under the key `edu_plan_v2` with a 400ms debounce. Storage shape:
+State is split across two concerns:
+
+1. **The legacy JSON shape** — a single `state` object holding progress maps, sessions, etc. Stored as a single row in a `kv` table inside the SQLite database.
+2. **Structured notes** — every note (per course, pattern, lab, etc.) lives in a `notes(target_type, target_id, body, updated_at)` table. The slide-out NotePanel reads/writes here directly.
+
+Both are stored in a SQLite database (sql.js / WASM), serialized to bytes, and persisted to IndexedDB on every change with a 400ms debounce. Export with `Settings → Download .sqlite`, restore with `Settings → Restore from .sqlite`. On first run, if the v1 `localStorage` (`edu_plan_v2`) key is present, it's automatically copied into SQLite.
+
+Legacy state JSON shape (unchanged):
 
 ```js
 {
@@ -124,17 +172,18 @@ Monaco editor ships with two custom themes (`grind-light`, `grind-dark`) that ma
 
 ### Views
 
-Nine views, switched by a single `view` state string:
+Ten views:
 
-- **Overview** — editorial hero with asymmetric layout, circular SVG progress ring, interactive ledger of all components, year timeline, 14-day activity sparkline
-- **Courses** — expandable cards with per-module checkboxes, progress slider, inline notes
-- **Patterns** — 28 coding patterns, toggleable with per-pattern expandable notes
-- **Design** — tabbed LLD and System Design with notes per item
-- **Labs** — cloud labs grouped by AWS category with per-lab notes + external links
+- **Overview** — "This week · do these" objectives panel (driven by `objectives.js`), progress ring, ledger, year timeline, recent activity sparkline, phase-aware weekly rhythm
+- **Courses** — expandable cards with per-module checkboxes, progress slider, "Open notes editor" button
+- **Patterns** — 28 coding patterns, toggleable, per-pattern slide-out notes
+- **Design** — tabbed LLD and System Design with slide-out notes per item
+- **Labs** — cloud labs grouped by AWS category with notes + external links
 - **Mocks** — grid tracker with increment/decrement per type per month
-- **Calendar** — monthly grid, session logging modal, per-day reflection notes
-- **Compiler** — Monaco editor with Python (Pyodide runs it), TypeScript (tsc transpiles, sandboxed `new Function` runs it), C# (copy-and-open .NET Fiddle handoff)
-- **Settings** — start date, weekly goal, export JSON, reset all
+- **Calendar** — monthly grid, session logging modal, per-day reflection notes (inline)
+- **Compiler** — Monaco editor with Python (Pyodide), TypeScript (tsc), C# (.NET Fiddle handoff)
+- **Notes** — searchable index of every note in the SQLite DB, filterable by kind
+- **Settings** — start date, weekly goal, `.sqlite` export/restore, JSON export, reset
 
 ### Compiler internals
 
@@ -148,13 +197,17 @@ Monaco Editor is loaded once from cdnjs as a singleton via a shared `ensureMonac
 
 ## Extending
 
-**Add a course**: append to the `COURSES` array near the top of `LearningDashboard.jsx`. Each course needs `id`, `name`, `url`, `hours`, `lessons`, `phase` (1-4), `priority` (1-3), `track`, `weeklyHours`, `note`, and a `modules` array. Everything else wires up automatically.
+**Add a course**: append to the `COURSES` array in `src/data/plan.js`. Each course needs `id`, `name`, `url`, `hours`, `lessons`, `phase` (1-4), `priority` (1-3), `track`, `weeklyHours`, `note`, `activeMonths` (array — drives the "active courses this month" badges in the Now panel), and a `modules` array.
 
 **Add a cloud lab**: append to `CLOUD_LABS`. Required: `id`, `name`, `category`, `phase`, `url`.
 
-**Change phase colors**: edit the `PHASES` array — `color` is used everywhere for that phase (ledger, ring, Monaco theme accents, course cards, month timeline).
+**Retarget a coding pattern to a different month**: edit its `month` field in `CODING_PATTERNS` — this drives the "This week · do these" pattern list.
 
-**Swap storage backends**: the `loadState` / `saveState` functions at the top are the only place storage is touched. Point them at IndexedDB, a remote API, or any sync service — the rest of the app doesn't care.
+**Adjust the weekly rhythm**: edit `DAILY_RHYTHM` and `WEEKLY_CADENCE` in `src/data/plan.js`. The Overview's rhythm card and the `LEARNING_PLAN.md` doc are the rendered outputs.
+
+**Change phase colors**: edit the `PHASES` array — `color` is used everywhere for that phase.
+
+**Swap storage backends**: `src/storage/db.js` is the only place storage is touched. The exported functions (`readStateJson`, `writeStateJson`, `readNote`, `writeNote`, `listAllNotes`, `exportSqlite`, `importSqlite`, `resetDb`) form the contract — point them at any backend.
 
 ---
 
@@ -163,10 +216,11 @@ Monaco Editor is loaded once from cdnjs as a singleton via a shared `ensureMonac
 - **React 18** + **Vite 5** — fast HMR, zero config, instant builds
 - **lucide-react** — icons
 - **Monaco Editor** — VS Code's editor, loaded from cdnjs on demand
+- **sql.js** — SQLite compiled to WebAssembly, loaded from cdnjs on demand
 - **Pyodide** + **TypeScript compiler** — loaded from CDN on first use, then cached by browser
 - **Fraunces** (display serif) + **JetBrains Mono** (code) + **Inter** (UI) — from Google Fonts
 
-No backend. No auth. No tracking. Everything lives in your browser's `localStorage`.
+No backend. No auth. No tracking. Everything lives in your browser's SQLite-in-IndexedDB.
 
 ---
 
