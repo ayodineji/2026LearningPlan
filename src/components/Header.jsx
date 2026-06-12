@@ -5,11 +5,13 @@ import { PHASES } from '../data/plan.js';
 
 export function Header({ view, setView, stats, theme, toggleTheme }) {
   const tabs = [
-    { id: 'overview', label: 'Overview' }, { id: 'courses', label: 'Courses' },
-    { id: 'patterns', label: 'Patterns' }, { id: 'design', label: 'Design' },
-    { id: 'labs', label: 'Labs' }, { id: 'mocks', label: 'Mocks' },
-    { id: 'calendar', label: 'Calendar' }, { id: 'compiler', label: 'Compiler' },
+    { id: 'overview', label: 'Overview' },
+    { id: 'phase1', label: 'Phase 1' },
+    { id: 'phase2', label: 'Phase 2' },
+    { id: 'phase3', label: 'Phase 3' },
+    { id: 'phase4', label: 'Phase 4' },
     { id: 'notes', label: 'Notes' },
+    { id: 'compiler', label: 'Compiler' },
     { id: 'settings', label: 'Settings' },
   ];
   const currentPhase = PHASES[stats.currentPhase - 1];
@@ -61,12 +63,14 @@ export function Header({ view, setView, stats, theme, toggleTheme }) {
         <nav style={{ display: 'flex', overflowX: 'auto', marginTop: -1 }} className="custom-scroll">
           {tabs.map((t, i) => {
             const active = view === t.id;
+            const isCurrentPhase = t.id === `phase${stats.currentPhase}`;
             return (
               <button
                 key={t.id}
                 onClick={() => setView(t.id)}
                 className="btn-t font-mono"
                 style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
                   padding: '14px 18px',
                   background: active ? theme.ink : 'transparent',
                   color: active ? theme.invert : theme.ink,
@@ -80,6 +84,9 @@ export function Header({ view, setView, stats, theme, toggleTheme }) {
                   whiteSpace: 'nowrap',
                 }}
               >
+                {isCurrentPhase && (
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: currentPhase.color, display: 'inline-block' }} />
+                )}
                 {t.label}
               </button>
             );

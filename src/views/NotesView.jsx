@@ -3,7 +3,7 @@ import { Search, FileText } from 'lucide-react';
 import { useTheme } from '../theme.jsx';
 import { SectionHeader, FilterChip } from '../components/common.jsx';
 import { listAllNotes } from '../storage/db.js';
-import { COURSES, CLOUD_LABS, LLD_PROBLEMS, SYSTEM_DESIGN_CASES, CODING_PATTERNS } from '../data/plan.js';
+import { COURSES, CLOUD_LABS, LLD_PROBLEMS, SYSTEM_DESIGN_CASES, CODING_PATTERNS, PROJECTS, REVIEW_ITEMS, PYTHON_EXERCISES } from '../data/plan.js';
 
 // Resolve a (kind, id) pair back to a human-readable title + subtitle.
 function resolveTarget(kind, id) {
@@ -14,7 +14,7 @@ function resolveTarget(kind, id) {
     }
     case 'pattern': {
       const p = CODING_PATTERNS.find(x => String(x.n) === String(id));
-      return p ? { title: `Pattern #${p.n} — ${p.name}`, subtitle: `Coding pattern · Month ${p.month}` } : null;
+      return p ? { title: `Pattern #${p.n} — ${p.name}`, subtitle: `Coding pattern · Phase ${p.phase}` } : null;
     }
     case 'lab': {
       const l = CLOUD_LABS.find(x => x.id === id);
@@ -27,6 +27,18 @@ function resolveTarget(kind, id) {
     case 'sd-case': {
       const s = SYSTEM_DESIGN_CASES.find(x => x.id === id);
       return s ? { title: s.name, subtitle: `System Design case` } : null;
+    }
+    case 'project': {
+      const p = PROJECTS.find(x => x.id === id);
+      return p ? { title: p.name, subtitle: `Phase ${p.phase} project` } : null;
+    }
+    case 'review': {
+      const r = REVIEW_ITEMS.find(x => x.id === id);
+      return r ? { title: r.name, subtitle: `Review & career · Phase ${r.phase}` } : null;
+    }
+    case 'pyex': {
+      const e = PYTHON_EXERCISES.find(x => x.id === id);
+      return e ? { title: e.name, subtitle: `Python practice · ${e.topic}`, url: 'https://www.educative.io/coding-practice/python-exercises' } : null;
     }
     default:
       return { title: `${kind} #${id}`, subtitle: kind };

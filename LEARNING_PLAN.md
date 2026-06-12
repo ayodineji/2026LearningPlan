@@ -1,163 +1,137 @@
-# The 12-Month Learning Plan
+# The 12-Month Learning Plan (v2)
 
-A complete, opinionated playbook for the Educative Premium Plus curriculum. The companion dashboard lives in `src/`; **the dashboard derives all of its "do this now" recommendations from the rules below**, so when you change cadence or scope here, also update `src/data/plan.js`.
+A complete, opinionated playbook for the Educative Premium Plus year. The companion dashboard lives in `src/`; **the dashboard renders this plan from `src/data/plan.js`** — when you change scope or cadence here, change the data file in the same commit.
 
-This document is split into three layers, each more concrete than the last:
+The goal of the year, in order:
 
-1. **The shape of the year** — phases, why they exist, what closes them out
-2. **The weekly rhythm** — exactly how to slot courses, patterns, labs, LLD, and mocks into a real week
-3. **Pacing rules and recovery** — what to do when you're behind, ahead, or stuck
+1. **Become a better engineer** — depth in a language, system design instincts, hands-on cloud, shipped projects
+2. **Land higher-paying roles** — interview mastery: patterns, system design, LLD, SQL, behavioral, mocks
+3. **Be forward-looking** — the AI track (LLM fundamentals → RAG → GenAI & agentic system design) plus public artifacts that prove it
+
+This plan deliberately uses the **breadth** of the Educative Plus subscription — many courses, labs, and problem sets — but anchors that breadth to four phase-sized themes so it never becomes channel-surfing.
 
 ---
 
 ## 1. The shape of the year
 
-Four 3-month phases, each layered on the previous. **You do not stop the previous tracks when you start a new phase** — coding patterns, mocks, and labs are ongoing background work; the foreground course set rotates.
+Four 3-month phases. Each phase page in the dashboard shows everything the phase contains — courses, patterns, design write-ups, labs, the phase project, review items, and mock targets — as flat checklists. **The phase page answers three questions: what do I do, what's done, what's next.**
 
-| Phase | Months | Theme | What's added | What continues |
-|-------|--------|-------|--------------|----------------|
-| **1 · Core Foundations** | 1–3 | Coding fluency + a real language | C#, System Design Fundamentals, Patterns 1–9 | (start here) |
-| **2 · System Design & Frontend** | 4–6 | Big systems + frontend stack | Modern System Design, TypeScript + React, Patterns 10–18, LLD intro (M6) | C#, coding patterns, labs, mocks |
-| **3 · Data Skills** | 7–9 | SQL & data engineering | SQL Patterns, Data Engineering, Patterns 19–24 | System design (cases), LLD, coding, labs |
-| **4 · Interview Mastery** | 10–12 | Polish + mocks | Patterns 25–28, advanced SD, mock marathon | Everything from previous phases on review/maintenance |
+| Phase | Months | Theme | Foreground | AI track |
+|-------|--------|-------|-----------|----------|
+| **1 · Core Foundations** | 1–3 | Coding fluency + a real language | C#, SD Fundamentals, Patterns 1–9 | — |
+| **2 · Systems, Frontend & AI Foundations** | 4–6 | Big systems + frontend + how LLMs work | Modern SD, TS + React, Patterns 10–18 | LLM Essentials |
+| **3 · Data & Applied AI** | 7–9 | SQL, pipelines, retrieval | SQL Patterns, Data Engineering, Patterns 19–24 | RAG with LangChain |
+| **4 · Interview Mastery & Forward Look** | 10–12 | Rehearsal + GenAI design | LLD, advanced SD, mock marathon, Patterns 25–28 | GenAI SD, Agentic SD, AI crash course |
 
-**Why this ordering**: a language (Phase 1) is the substrate everything else runs on. System design (Phase 2) is the highest-variance interview topic and benefits from the longest exposure. SQL and data (Phase 3) are concentrated because the content is dense. Phase 4 is deliberately light on new content — the job is to consolidate and rehearse.
+**Why this ordering**: a language (Phase 1) is the substrate everything else runs on. System design (Phase 2) is the highest-variance interview topic and gets the longest exposure; the AI track starts there with fundamentals so that Phase 3 can *build* with LLMs (RAG over real pipelines) and Phase 4 can *design* with them (GenAI/agentic system design — the forward-looking interview category). Phase 4 adds almost no other new material: the job is consolidation and rehearsal.
+
+### Ongoing tracks (never rotate out)
+
+- **Coding patterns** — the 28 chapters of Grokking the Coding Interview Patterns (Python), distributed 9/9/6/4 across phases. Each phase page links straight to the chapters. Two 1.5h sessions/week, every week.
+- **Python practice exercises** — all 63 named problems from Educative's Python practice set, assigned to the phase whose patterns they reinforce (sliding window in Phase 1, backtracking/DP in Phase 2, graphs in Phase 3, bitwise/stacks in Phase 4). 1–2/week keeps pace.
+
+### One shipped project per phase — non-negotiable
+
+Courses get you skills; **public artifacts get you hired**. Each phase has exactly one project, tracked as a first-class item with the same weight as a course:
+
+1. **Phase 1** — C# project (RPG Combat Engine or Cash Flow Manager) shipped to GitHub: public repo, real README, tests.
+2. **Phase 2** — A deployed TypeScript/React app that calls an LLM API. Exercises the frontend stack and the LLM fundamentals together.
+3. **Phase 3** — A data pipeline + RAG over your own dataset. The data-engineering and RAG courses converge here.
+4. **Phase 4** — An agentic capstone (an agent using tools, e.g. against the Phase 3 data) + final portfolio polish.
 
 ### Phase exit criteria
 
-A phase isn't "done" because the calendar says so. Each phase has an exit criterion the dashboard treats as a non-negotiable before phase N+1 should fully start.
+A phase isn't done because the calendar says so. The dashboard computes these live from your checkboxes and shows them at the top of each phase page:
 
-- **Phase 1 → 2**: Patterns 1–9 ✓, C# fundamentals course ≥ 75%, System Design Fundamentals 100%, ≥ 4 mocks total.
-- **Phase 2 → 3**: Patterns 10–18 ✓, TypeScript course ≥ 75%, ≥ 4 system-design case studies, LLD started.
-- **Phase 3 → 4**: Patterns 19–24 ✓, SQL course 100%, Data Engineering course ≥ 75%, ≥ 12 mocks cumulative.
-- **Phase 4 done**: All 28 patterns ✓, all 9 courses ≥ 90%, ≥ 25 mocks cumulative, ≥ 10 LLD + ≥ 10 SD cases done.
-
-If you hit a month boundary without the exit criteria from the previous phase, the dashboard's "This week · do these" panel will keep recommending catch-up work from earlier months under the **Catch-up** badge.
+- **Phase 1 → 2**: Patterns 1–9 ✓ · C# ≥ 75% · SD Fundamentals 100% · project shipped · mock targets met (4 SD + 4 coding)
+- **Phase 2 → 3**: Patterns 10–18 ✓ · TypeScript ≥ 75% · LLM Essentials ✓ · ≥ 4 SD cases written up · LLM app deployed · mock targets met
+- **Phase 3 → 4**: Patterns 19–24 ✓ · SQL 100% · RAG course ✓ · behavioral course + first STAR stories ✓ · pipeline+RAG project deployed · mock targets met
+- **Phase 4 done**: All 28 patterns ✓ · GenAI SD complete · ≥ 10 LLD + ≥ 10 SD write-ups (cumulative) · capstone shipped · career items done · mock targets met
 
 ---
 
 ## 2. The weekly rhythm
 
-The plan is 10–12 hours/week. **Treat 11h as the baseline.** Below 9h/week for two consecutive weeks is a structural problem; above 14h/week sustained is unsustainable.
+The plan is 11–12 hours/week. Below 9h/week for two consecutive weeks is a structural problem; above 14h sustained is unsustainable. The dashboard's Overview shows the phase-appropriate rhythm.
 
-The dashboard's "Weekly rhythm" card on the Overview shows the phase-appropriate version of this table. The general structure:
-
-### A standard week (any phase)
-
-| Day | Block 1 | Block 2 | Approx. |
-|-----|---------|---------|---------|
-| **Mon** | Foreground course of the phase (1.5h) | Secondary course (1h) | 2.5h |
+| Day | Block 1 | Block 2 | ~ |
+|-----|---------|---------|---|
+| **Mon** | Foreground course (1.5h) | Secondary course (1h) | 2.5h |
 | **Tue** | Coding patterns (1.5h) | Python practice (0.5h) | 2h |
-| **Wed** | Foreground course (1.5h) | Secondary course (1h) | 2.5h |
+| **Wed** | AI-track or secondary (1–1.5h) | SD case study (1h) | 2.5h |
 | **Thu** | Coding patterns (1.5h) | Phase-specific block (0.5h) | 2h |
-| **Fri** | Cloud lab (1h) | Project work or LLD (1h) | 2h |
+| **Fri** | Cloud lab (1h) | Phase project work (1h) | 2h |
 | **Sat** | Mock interview (1h) | Notes review (0.5h) | 1.5h |
 | **Sun** | Buffer / off day | — | 0–1h |
-| **Total** | | | ~11h |
 
-### Phase-specific substitutions
+**Why mocks every Saturday**: one mock teaches more than three solo problems, and the fixed slot forces a hard deadline on the week's prep. Mock targets are per-phase (`MOCK_TARGETS` in `plan.js`); Phase 4 adds **GenAI mocks** — the four built into Grokking the Generative AI System Design.
 
-- **Phase 1**: foreground = C#; secondary = SD Fundamentals. Phase-specific block = OOP exercises.
-- **Phase 2**: foreground = Modern SD; secondary = TypeScript + React. Phase-specific = LLD reading (from M6).
-- **Phase 3**: foreground = SQL Patterns; secondary = Data Engineering. Phase-specific = LLD problem.
-- **Phase 4**: foreground = LLD problems; secondary = advanced SD case studies. Phase-specific = consolidation.
+**Why labs land on Friday**: hands-on click-through work fits the lowest-cognitive-load slot. The lab list was deliberately curated from 37 to 22 — duplicates cut — so every lab earns its hour. Phase 4 has no labs by design.
 
-### Why mocks every Saturday
-
-Mocks compound. One mock teaches more than three solo problems. The Saturday slot is fixed because (a) you've accumulated material to test by then, (b) you're not too tired from the week, and (c) it forces a hard deadline on the rest of the week's prep.
-
-Mock targets per month live in `MOCK_INTERVIEW_TARGETS` in `src/data/plan.js`. If you're below target by mid-month, **steal time from the secondary course block, not from coding patterns**.
-
-### Why labs land on Friday
-
-Labs are hands-on and need an uninterrupted hour. Friday afternoons (or evenings) are typically the lowest-cognitive-load slot of the week — perfect for click-through hands-on work that doesn't demand fresh problem-solving.
+**Why project work is also Friday**: the project is how the week's learning compounds into something you can point at. If the week gets compressed, the project block moves to Sunday's buffer — it doesn't get skipped.
 
 ---
 
 ## 3. Pacing rules
 
 ### Rule 1 — Patterns are sacred
-
-Coding patterns drop **every week**, never skipped. Two 1.5h sessions/week = 3h/week = ~12h/month = enough to keep ~3 patterns moving per month (the schedule). If everything else slips, patterns continue.
+Patterns drop every week, never skipped. If everything else slips, patterns continue.
 
 ### Rule 2 — One foreground course at a time
+Treat exactly one course as foreground (3–4h/wk) and one as secondary (2–3h/wk). The AI-track course is a third, smaller lane (1–2h/wk) — it never displaces the foreground.
 
-Despite the dashboard showing every course you've started, you should treat exactly **one** course as foreground (3–4h/week) and one as secondary (2–3h/week) per phase. Trying to run 4+ courses in parallel guarantees stalling on all of them.
+### Rule 3 — Behind? Cut in this order
+1. Drop the secondary course block by 1h/week
+2. Drop one SD case study
+3. Skip a lab Friday
+4. Last resort: skip one mock (never two in a row)
 
-The dashboard's "Active courses this month" chip row tells you which courses are scheduled for the current month. **If more than two are showing, you've drifted** — pick the two you'll touch this week and ignore the rest.
-
-### Rule 3 — Behind on patterns? Cut SD case studies first
-
-The dashboard's catch-up logic surfaces missed patterns automatically. The right way to absorb the deficit:
-
-1. First: drop secondary course block by 1h/week
-2. Then: drop one of the two weekly SD case studies
-3. Last resort: skip a mock (only ever skip one in a row)
+The phase project and patterns are never the thing you cut.
 
 ### Rule 4 — Behind on mocks? Don't double up
+Add one extra weekday mock, not two on Saturday. Two mocks in a day produces fatigue, not skill.
 
-Mocks need recovery time. If you've missed mocks, do **one extra weekday mock** (e.g. Wednesday evening), not two on Saturday. Two mocks in a day produces fatigue, not skill.
+### Rule 5 — Ahead? Deepen, don't pull forward
+Redo a previous mock with full prep, rewrite a skimmed SD case, or redo old patterns cold. The review items on each phase page exist precisely because retention is engineered, not assumed.
 
-### Rule 5 — Ahead of schedule? Don't pull forward; deepen
-
-If you finish a month's content with a week to spare, **do not start next month's patterns early**. Instead:
-
-- Re-do one previous mock with the recording, notes, and full prep cycle
-- Write up a system-design case study you skimmed earlier
-- Read one chapter of the next phase's foreground course as a warm-up only
-
-The goal isn't velocity. The goal is depth at every layer.
-
-### Rule 6 — A note on the notes
-
-Notes are the single highest-leverage habit in this plan. The dashboard has a slide-out file-editor note panel attached to every course, pattern, lab, LLD problem, and SD case. **Use it on every meaningful session.** Patterns especially: write the intuition, the template, and the gotcha in your own words. The dashboard's Notes page searches across everything.
-
-A good note is:
-- The pattern's pseudocode template
-- One example where you got it wrong, and why
-- One link to a problem you want to redo
-
-A bad note is a copy-paste of the lesson summary.
+### Rule 6 — Notes are the highest-leverage habit
+Every course, pattern, lab, design problem, and project has a note button. A good pattern note = the pseudocode template, one example you got wrong and why, one problem to redo. A bad note = a copy-paste of the lesson summary. The Notes page searches everything.
 
 ---
 
-## 4. How the dashboard maps to this doc
+## 4. The career workstream
 
-| Dashboard feature | Source of truth in this repo |
-|-------------------|------------------------------|
-| "This week · do these" panel | `src/lib/objectives.js` — `computeThisWeek` |
-| Per-phase weekly rhythm card | `DAILY_RHYTHM` in `src/data/plan.js` |
-| Monthly pattern targets | `month` field on each entry in `CODING_PATTERNS` |
-| Active courses per month | `activeMonths` field on each course |
-| Mock targets per month | `MOCK_INTERVIEW_TARGETS` |
-| Note storage | SQLite (`notes` table) via `src/storage/db.js` |
-| Progress persistence | SQLite (`kv` table) backed by IndexedDB, exportable as `.sqlite` |
+Interview skill without market contact is theory. Built into the plan:
 
-When you change a rule in this document, change the data file in the same commit. The dashboard is a **rendering** of the plan; the plan is the source.
+- **Phase 1**: GitHub profile pass (README, pinned repos)
+- **Phase 3**: Grokking the Behavioral Interview (free) + first 4 STAR stories
+- **Phase 4**: STAR bank complete (8 stories) · resume + LinkedIn rewritten around the year's projects · **5 real calibration applications** before the big swings
 
 ---
 
-## 5. Common failure modes
+## 5. How the dashboard maps to this doc
 
-- **"I'll catch up on patterns later"** — you won't. The deficit compounds. Two missed weeks of patterns becomes a six-week debt by month 4.
-- **Starting Phase 2 with C# at 30%** — finish C# (or at least get to 80%) before adding TypeScript. Two languages in parallel is the most common stall.
-- **Hoarding labs for "when I have time"** — labs are short and cheap. Do them on Friday or they never happen.
-- **Doing one mock then taking three weeks off mocks because it went badly** — mocks going badly is the entire point of doing them. Schedule the next one within 5 days.
-- **Reading SD case studies instead of writing them** — passive reading does almost nothing for SD interviews. The dashboard's per-case note panel is where the actual learning lives.
+| Dashboard feature | Source of truth |
+|-------------------|-----------------|
+| Phase pages (sections + checklists) | `computePhaseItems` in `src/lib/objectives.js` |
+| Exit criteria banners | `EXIT_CRITERIA` in `src/data/plan.js` |
+| "Next up" panel on Overview | `computeNextUp` — first unchecked item per section |
+| Course % | Derived from module checks (patterns course derives from the 28 patterns) |
+| Mock targets | `MOCK_TARGETS` (per phase, per type) |
+| Notes | SQLite `notes` table via `src/storage/db.js` |
+| Progress persistence | SQLite (`kv` table) in IndexedDB, exportable as `.sqlite` from Settings |
 
 ---
 
 ## 6. End-of-year checklist
 
-By month 12 the deliverables are:
-
 - [ ] All 28 coding patterns implemented + noted in your own words
-- [ ] All 9 courses ≥ 90% complete
+- [ ] All courses on all four phase pages ≥ 90%
 - [ ] All 4 phases passed their exit criteria
-- [ ] ≥ 25 mocks logged, with notes on each
-- [ ] ≥ 10 LLD problems written up
-- [ ] ≥ 10 system-design case studies written up
-- [ ] One end-to-end project completed (RPG / Cash Flow / Airflow / F1 — pick one)
-- [ ] An exported `grind-{date}.sqlite` snapshot stored somewhere off-device
+- [ ] Mock targets met every phase (incl. 4 GenAI mocks)
+- [ ] ≥ 10 LLD + ≥ 10 system-design write-ups
+- [ ] **4 shipped, public projects** — C# app, LLM-powered web app, pipeline + RAG, agentic capstone
+- [ ] STAR bank, refreshed resume, 5 calibration applications submitted
+- [ ] An exported `grind-{date}.sqlite` snapshot stored off-device
 
-If you hit all of those, you are interview-ready at the senior-engineer bar for most companies in the plan's target band. Good luck.
+Hit all of those and you're interview-ready at the senior bar — with a portfolio that says "I build with AI," not just "I watched courses about it."

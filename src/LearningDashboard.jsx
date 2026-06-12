@@ -3,43 +3,47 @@ import { THEMES, ThemeContext } from './theme.jsx';
 import { GlobalStyles } from './components/GlobalStyles.jsx';
 import { Header, Footer } from './components/Header.jsx';
 import { NotePanel } from './components/NotePanel.jsx';
-import { SessionModal } from './components/SessionModal.jsx';
 import { OverviewView } from './views/OverviewView.jsx';
-import { CoursesView } from './views/CoursesView.jsx';
-import { PatternsView } from './views/PatternsView.jsx';
-import { DesignView } from './views/DesignView.jsx';
-import { LabsView } from './views/LabsView.jsx';
-import { MocksView } from './views/MocksView.jsx';
-import { CalendarView } from './views/CalendarView.jsx';
+import { PhaseView } from './views/PhaseView.jsx';
 import { NotesView } from './views/NotesView.jsx';
 import { SettingsView } from './views/SettingsView.jsx';
 import { CompilerView } from './views/CompilerView.jsx';
-import { COURSES, MOCK_INTERVIEW_TARGETS, PLAN_START_DEFAULT } from './data/plan.js';
-import { computeStats, formatDate } from './lib/utils.js';
-import { readStateJson, writeStateJson, readNote, writeNote, resetDb } from './storage/db.js';
+import { PLAN_START_DEFAULT } from './data/plan.js';
+import { computeStats } from './lib/utils.js';
+import { readStateJson, writeStateJson, readNote, writeNote, resetDb, flushSave } from './storage/db.js';
 
 const defaultState = {
   startDate: PLAN_START_DEFAULT,
   theme: 'light',
-  courseProgress: {}, courseNotes: {}, moduleChecks: {},
-  patterns: {}, patternNotes: {},
-  labs: {}, labNotes: {},
-  lldProblems: {}, lldNotes: {},
-  sdCases: {}, sdNotes: {},
+  courseProgress: {},   // legacy manual % (course progress is now derived)
+  moduleChecks: {},
+  patterns: {},
+  pyexChecks: {},
+  labs: {},
+  lldProblems: {},
+  sdCases: {},
   projects: {},
-  mockInterviews: {},
-  sessions: [],
-  customNotes: {},
+  reviews: {},
+  mocks: {},            // `${phase}-${type}` -> count
   weeklyGoalHours: 11,
+};
+
+// Map a checklist item kind to its slice of state.
+const KIND_TO_KEY = {
+  pattern: 'patterns',
+  pyex: 'pyexChecks',
+  module: 'moduleChecks',
+  lab: 'labs',
+  lld: 'lldProblems',
+  'sd-case': 'sdCases',
+  project: 'projects',
+  review: 'reviews',
 };
 
 export default function LearningDashboard() {
   const [state, setState] = useState(defaultState);
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState('overview');
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [showSessionModal, setShowSessionModal] = useState(false);
 
   // Slide-out note panel state
   const [noteTarget, setNoteTarget] = useState(null);
@@ -60,19 +64,20 @@ export default function LearningDashboard() {
     writeStateJson(state).catch(e => console.error('SQLite write failed', e));
   }, [state, loaded]);
 
-  const stats = useMemo(() => computeStats(state, MOCK_INTERVIEW_TARGETS, COURSES), [state]);
+  const stats = useMemo(() => computeStats(state), [state]);
 
   const update = (patch) => setState(s => ({ ...s, ...patch }));
-  const toggle = (key, id) => setState(s => ({ ...s, [key]: { ...s[key], [id]: !s[key][id] } }));
-  const setCourseProgress = (id, pct) => setState(s => ({ ...s, courseProgress: { ...s.courseProgress, [id]: Math.max(0, Math.min(100, pct)) } }));
-  const addSession = (session) => setState(s => ({ ...s, sessions: [...s.sessions, { ...session, id: Date.now().toString() }] }));
-  const deleteSession = (id) => setState(s => ({ ...s, sessions: s.sessions.filter(x => x.id !== id) }));
-  const setMockInterview = (month, type, count) => setState(s => ({ ...s, mockInterviews: { ...s.mockInterviews, [`${month}-${type}`]: count } }));
-  const setDayNote = (date, text) => setState(s => ({ ...s, customNotes: { ...s.customNotes, [date]: text } }));
+  const toggleItem = (kind, id) => {
+    const key = KIND_TO_KEY[kind];
+    if (!key) return;
+    setState(s => ({ ...s, [key]: { ...s[key], [id]: !s[key][id] } }));
+  };
+  const setMock = (phase, type, count) =>
+    setState(s => ({ ...s, mocks: { ...s.mocks, [`${phase}-${type}`]: Math.max(0, count) } }));
 
   const theme = THEMES[state.theme] || THEMES.light;
 
-  // Open the slide-out notes panel for a given target (course, pattern, lab, lld, sd, etc.)
+  // Open the slide-out notes panel for a given target (course, pattern, lab, …).
   const openNote = async (target) => {
     setNoteTarget(target);
     const body = await readNote(target.kind, target.id);
@@ -99,10 +104,16 @@ export default function LearningDashboard() {
   const toggleTheme = () => update({ theme: state.theme === 'light' ? 'dark' : 'light' });
 
   const onReset = async () => {
-    if (!confirm('Reset everything? This wipes your SQLite progress + notes. This cannot be undone.')) return;
     await resetDb();
-    setState({ ...defaultState, theme: state.theme });
+    const fresh = { ...defaultState, theme: state.theme };
+    // Persist the fresh state immediately so a quick reload can't land on an
+    // empty DB and re-trigger the legacy localStorage migration.
+    await writeStateJson(fresh);
+    await flushSave();
+    setState(fresh);
   };
+
+  const phaseMatch = view.match(/^phase(\d)$/);
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -113,25 +124,24 @@ export default function LearningDashboard() {
         <Header view={view} setView={setView} stats={stats} theme={theme} toggleTheme={toggleTheme} />
 
         <main style={{ maxWidth: 920, margin: '0 auto', padding: '0 32px 80px', position: 'relative', zIndex: 2 }}>
-          {view === 'overview' && <OverviewView state={state} stats={stats} setView={setView} openNote={openNote} />}
-          {view === 'courses' && <CoursesView state={state} setCourseProgress={setCourseProgress} toggleModule={(id) => toggle('moduleChecks', id)} openNote={openNote} />}
-          {view === 'patterns' && <PatternsView state={state} togglePattern={(n) => toggle('patterns', n)} openNote={openNote} />}
-          {view === 'design' && <DesignView state={state} toggleLLD={(id) => toggle('lldProblems', id)} toggleSD={(id) => toggle('sdCases', id)} openNote={openNote} />}
-          {view === 'labs' && <LabsView state={state} toggleLab={(id) => toggle('labs', id)} openNote={openNote} />}
-          {view === 'mocks' && <MocksView state={state} setMockInterview={setMockInterview} />}
-          {view === 'calendar' && <CalendarView state={state} calendarMonth={calendarMonth} setCalendarMonth={setCalendarMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setDayNote={setDayNote} onAddSession={() => setShowSessionModal(true)} deleteSession={deleteSession} />}
+          {view === 'overview' && <OverviewView state={state} stats={stats} setView={setView} />}
+          {phaseMatch && (
+            <PhaseView
+              key={phaseMatch[1]}
+              phaseN={Number(phaseMatch[1])}
+              state={state}
+              stats={stats}
+              handlers={{
+                toggleItem,
+                setMock: (type, count) => setMock(Number(phaseMatch[1]), type, count),
+              }}
+              openNote={openNote}
+            />
+          )}
           {view === 'compiler' && <CompilerView />}
           {view === 'notes' && <NotesView openNote={openNote} refreshKey={noteRefreshKey} />}
-          {view === 'settings' && <SettingsView state={state} update={update} toggleProject={(id) => toggle('projects', id)} onReset={onReset} />}
+          {view === 'settings' && <SettingsView state={state} update={update} onReset={onReset} />}
         </main>
-
-        {showSessionModal && (
-          <SessionModal
-            date={selectedDate || formatDate(new Date())}
-            onSave={(s) => { addSession(s); setShowSessionModal(false); }}
-            onClose={() => setShowSessionModal(false)}
-          />
-        )}
 
         <NotePanel
           open={!!noteTarget}

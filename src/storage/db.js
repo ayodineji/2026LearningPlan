@@ -105,6 +105,15 @@ export function scheduleSave() {
   }, 400);
 }
 
+// Cancel any pending debounced save and persist immediately.
+export async function flushSave() {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  await persistNow();
+}
+
 // ---------- state JSON (legacy shape) ----------
 
 export async function readStateJson() {
@@ -121,6 +130,10 @@ export async function readStateJson() {
     if (raw) {
       const obj = JSON.parse(raw);
       await writeStateJson(obj);
+      await flushSave();
+      // Remove the legacy key so it can never resurrect old progress
+      // (e.g. after a reset) once it is safely in SQLite.
+      localStorage.removeItem(LEGACY_LS_KEY);
       return obj;
     }
   } catch (e) {
@@ -196,5 +209,8 @@ export async function resetDb() {
   }
   dbInstance = new sql.Database();
   ensureSchema(dbInstance);
+  // Also clear the legacy localStorage state so the first-boot migration
+  // can't restore pre-reset progress.
+  try { localStorage.removeItem(LEGACY_LS_KEY); } catch (e) {}
   await persistNow();
 }

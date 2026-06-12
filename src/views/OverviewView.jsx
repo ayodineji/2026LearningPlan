@@ -1,22 +1,27 @@
 import React, { useMemo } from 'react';
-import { ArrowUpRight, ChevronRight, ExternalLink, Target } from 'lucide-react';
+import { ArrowUpRight, Target, Flag } from 'lucide-react';
 import { useTheme } from '../theme.jsx';
 import { BigStat } from '../components/common.jsx';
-import {
-  PHASES, MONTHLY_MILESTONES, LLD_PROBLEMS, SYSTEM_DESIGN_CASES,
-  CLOUD_LABS, CODING_PATTERNS, COURSES,
-} from '../data/plan.js';
-import { getPhaseFromMonth, formatDate, addDays } from '../lib/utils.js';
-import { computeNowObjectives, computeThisWeek } from '../lib/objectives.js';
+import { PHASES, CODING_PATTERNS, MOCK_TARGETS, DAILY_RHYTHM } from '../data/plan.js';
+import { getPhaseFromMonth } from '../lib/utils.js';
+import { computeNextUp, computeExitCriteria, phaseCompletion } from '../lib/objectives.js';
 
-export function OverviewView({ state, stats, setView, openNote }) {
+export function OverviewView({ state, stats, setView }) {
   const theme = useTheme();
   const currentPhase = PHASES[stats.currentPhase - 1];
-  const currentMilestone = MONTHLY_MILESTONES[stats.currentMonth - 1];
-  const nextMilestone = stats.currentMonth < 12 ? MONTHLY_MILESTONES[stats.currentMonth] : null;
 
-  const objectives = useMemo(() => computeNowObjectives(state, stats), [state, stats]);
-  const thisWeek = useMemo(() => computeThisWeek(objectives), [objectives]);
+  const nextUp = useMemo(() => computeNextUp(stats.currentPhase, state), [state, stats.currentPhase]);
+  const exit = useMemo(() => computeExitCriteria(stats.currentPhase, state), [state, stats.currentPhase]);
+  const completions = useMemo(
+    () => PHASES.map(p => phaseCompletion(p.n, state)),
+    [state],
+  );
+
+  const patternsDone = CODING_PATTERNS.filter(p => state.patterns[p.n]).length;
+  const mockTargetTotal = Object.values(MOCK_TARGETS).reduce((s, m) => s + Object.values(m).reduce((a, b) => a + b, 0), 0);
+  const mocksDone = Object.values(state.mocks).reduce((s, x) => s + (x || 0), 0);
+  const overallPct = (completions.reduce((s, c) => s + c, 0) / 4) * 100;
+  const exitDone = exit.filter(c => c.done).length;
 
   return (
     <div className="animate-in" style={{ paddingTop: 40 }}>
@@ -29,238 +34,152 @@ export function OverviewView({ state, stats, setView, openNote }) {
       <div className="divider-dotted" style={{ marginBottom: 32 }} />
 
       {/* Header band */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto',
-        gap: 32,
-        alignItems: 'start',
-        marginBottom: 32,
-      }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 32, alignItems: 'start', marginBottom: 32 }}>
         <div>
           <div className="font-mono" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.25em', marginBottom: 12, color: currentPhase.color }}>
             Phase {currentPhase.n} · {currentPhase.months} · Month {stats.currentMonth}
           </div>
           <h2 className="font-display" style={{ fontSize: 48, fontWeight: 400, letterSpacing: '-0.035em', lineHeight: 1.0, margin: '0 0 16px' }}>
-            <em style={{ fontStyle: 'italic', fontWeight: 300 }}>Right now you should be working on</em>
+            <em style={{ fontStyle: 'italic', fontWeight: 300 }}>What's next, what's done,<br />what's coming</em>
           </h2>
           <p className="serif" style={{ fontSize: 18, lineHeight: 1.55, maxWidth: 560, marginTop: 12, color: theme.inkDim }}>
-            Below is the literal queue for this week — your active courses, the exact patterns this month wants from you, the next labs to run, and any mocks owed. Click any item to jump to it.
+            {currentPhase.summary}
           </p>
         </div>
         <ProgressRing stats={stats} currentPhase={currentPhase} theme={theme} />
       </div>
 
-      {/* NOW PANEL — the centerpiece */}
-      <NowPanel objectives={objectives} thisWeek={thisWeek} setView={setView} openNote={openNote} />
-
-      {/* High-level numbers */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: `2px solid ${theme.ink}`, borderBottom: `2px solid ${theme.ink}`, margin: '40px 0' }}>
-        <BigStat label="Year progress" value={`${stats.progressPct.toFixed(1)}`} unit="%" sub={`${stats.daysElapsed} of 365 days`} />
-        <BigStat label="Hours logged" value={stats.totalHoursLogged.toFixed(0)} unit="h" sub={`${stats.weekHours.toFixed(1)}h this week / ${state.weeklyGoalHours}h goal`} border />
-        <BigStat label="Mock interviews" value={stats.mockTotal} unit={`/${stats.mockTargetTotal}`} sub="Across all types" border />
-      </div>
-
-      {/* Month focus card */}
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>§ 02 · This month at a glance</span>
-          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>M{String(stats.currentMonth).padStart(2, '0')}</span>
+      {/* NEXT UP — first unchecked item per section of the current phase */}
+      <div style={{ border: `2px solid ${theme.ink}`, borderRadius: 2, background: theme.bgElev, padding: '24px 28px', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Target size={16} style={{ color: currentPhase.color }} />
+            <span className="font-mono" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.22em', color: currentPhase.color, fontWeight: 700 }}>
+              Next up · Phase {currentPhase.n}
+            </span>
+          </div>
+          <button onClick={() => setView(`phase${stats.currentPhase}`)} className="btn-t font-mono"
+            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', color: theme.ink, border: 'none', cursor: 'pointer', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.18em', opacity: 0.7 }}>
+            Open phase page <ArrowUpRight size={11} />
+          </button>
         </div>
-        <div className="divider-dotted" style={{ marginBottom: 24 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '7fr 5fr', gap: 24 }}>
+
+        {nextUp.length === 0 ? (
+          <div className="serif" style={{ fontStyle: 'italic', fontSize: 16, opacity: 0.6, padding: '12px 0' }}>
+            Phase {currentPhase.n} is fully checked off. Move to the next phase page, or deepen: redo a mock, rewrite a design case.
+          </div>
+        ) : (
           <div>
-            <div className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6, marginBottom: 8 }}>Focus</div>
-            <h3 className="font-display" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: currentPhase.color, margin: '0 0 16px' }}>
-              {currentMilestone.focus}
-            </h3>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {currentMilestone.items.map((item, i) => (
-                <li key={i} style={{
-                  display: 'flex', gap: 12, padding: '10px 0',
-                  borderBottom: i < currentMilestone.items.length - 1 ? `1px dotted ${theme.ruleDim}` : 'none',
-                }}>
-                  <span className="font-mono" style={{ fontSize: 10, opacity: 0.4, paddingTop: 4 }}>{String(i + 1).padStart(2, '0')}</span>
-                  <span className="serif" style={{ fontSize: 16 }}>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div style={{ borderLeft: `1px solid ${theme.ink}`, paddingLeft: 24 }}>
-            <div className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6, marginBottom: 8 }}>Next month</div>
-            {nextMilestone ? (
-              <>
-                <div className="font-mono" style={{ fontSize: 10, opacity: 0.5, marginBottom: 4 }}>Month {nextMilestone.month}</div>
-                <h4 className="font-display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', margin: '0 0 12px' }}>
-                  {nextMilestone.focus}
-                </h4>
-                <div style={{ fontSize: 14, opacity: 0.7, lineHeight: 1.55 }}>
-                  {nextMilestone.items.join(' · ')}
-                </div>
-              </>
-            ) : (
-              <div className="serif" style={{ fontStyle: 'italic', fontSize: 18, opacity: 0.6 }}>Final month. Mock marathon.</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Ledger */}
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>§ 03 · Ledger</span>
-          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>Completion by component</span>
-        </div>
-        <div className="divider-dotted" style={{ marginBottom: 24 }} />
-        <Ledger stats={stats} setView={setView} />
-      </div>
-
-      {/* Year timeline */}
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>§ 04 · Timeline</span>
-          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>12 months at a glance</span>
-        </div>
-        <div className="divider-dotted" style={{ marginBottom: 24 }} />
-        <YearTimeline stats={stats} />
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-        <RecentActivity state={state} />
-        <WeeklyRhythm state={state} objectives={objectives} />
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// NOW PANEL — literal current objectives
-// ============================================================
-
-function NowPanel({ objectives, thisWeek, setView, openNote }) {
-  const theme = useTheme();
-  const phase = objectives.phaseInfo;
-
-  return (
-    <div style={{
-      border: `2px solid ${theme.ink}`,
-      borderRadius: 2,
-      background: theme.bgElev,
-      padding: '24px 28px',
-      marginBottom: 32,
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 16,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Target size={16} style={{ color: phase.color }} />
-          <span className="font-mono" style={{
-            fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.22em',
-            color: phase.color, fontWeight: 700,
-          }}>
-            This week · do these
-          </span>
-        </div>
-        <span className="font-mono" style={{
-          fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.18em', opacity: 0.55,
-        }}>
-          {objectives.cadence?.total ?? 11}h target · Phase {phase.n}
-        </span>
-      </div>
-
-      {thisWeek.length === 0 ? (
-        <div className="serif" style={{ fontStyle: 'italic', fontSize: 16, opacity: 0.6, padding: '12px 0' }}>
-          Nothing queued for this month — you're caught up. Pick a stretch lab or extra mock from the Labs/Mocks tabs.
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {thisWeek.map((item, i) => (
-            <button
-              key={`${item.kind}-${item.id}-${i}`}
-              onClick={() => setView(item.view)}
-              className="btn-t hover-bg"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '60px 1fr auto auto',
-                gap: 16, alignItems: 'center',
-                padding: '14px 12px',
-                background: 'transparent',
-                border: 'none',
-                borderBottom: i < thisWeek.length - 1 ? `1px dotted ${theme.ruleDim}` : 'none',
-                cursor: 'pointer', textAlign: 'left',
-                width: '100%',
-              }}
-            >
-              <span
-                className="font-mono"
-                style={{
-                  display: 'inline-block',
-                  fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase',
-                  padding: '3px 8px',
-                  background: item.color + '22',
-                  color: item.color,
-                  border: `1px solid ${item.color}55`,
-                  borderRadius: 2,
-                  fontWeight: 700, textAlign: 'center',
-                }}
-              >
-                {item.kind}
-              </span>
-              <div>
-                <div className="serif" style={{ fontSize: 16, lineHeight: 1.3, color: theme.ink }}>
-                  {item.label}
-                </div>
-                <div className="font-mono" style={{ fontSize: 10, opacity: 0.55, marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                  {item.hint}
-                </div>
-              </div>
-              <span className="font-mono" style={{ fontSize: 10, opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-                {item.track}
-              </span>
-              <ArrowUpRight size={14} style={{ opacity: 0.45 }} />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {objectives.activeCourses.length > 0 && (
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px dotted ${theme.ruleDim}` }}>
-          <div className="font-mono" style={{
-            fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em',
-            opacity: 0.55, marginBottom: 10,
-          }}>
-            Active courses this month
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {objectives.activeCourses.map(ac => (
+            {nextUp.map((item, i) => (
               <button
-                key={ac.course.id}
-                onClick={() => setView('courses')}
-                className="btn-t"
+                key={`${item.kind}-${item.id}`}
+                onClick={() => setView(`phase${stats.currentPhase}`)}
+                className="btn-t hover-bg"
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '6px 10px',
-                  background: theme.bg,
-                  border: `1px solid ${phase.color}55`,
-                  borderRadius: 2,
-                  cursor: 'pointer',
+                  display: 'grid', gridTemplateColumns: '90px 1fr auto', gap: 16, alignItems: 'center',
+                  padding: '13px 12px', background: 'transparent', border: 'none',
+                  borderBottom: i < nextUp.length - 1 ? `1px dotted ${theme.ruleDim}` : 'none',
+                  cursor: 'pointer', textAlign: 'left', width: '100%',
                 }}
               >
-                <span className="font-mono" style={{ fontSize: 10, color: phase.color, fontWeight: 700, letterSpacing: '0.1em' }}>
-                  {ac.progress}%
+                <span className="font-mono" style={{
+                  display: 'inline-block', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase',
+                  padding: '3px 8px', background: item.color + '22', color: item.color,
+                  border: `1px solid ${item.color}55`, borderRadius: 2, fontWeight: 700, textAlign: 'center',
+                }}>
+                  {item.section}
                 </span>
-                <span style={{ fontSize: 12 }}>{ac.course.name}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="serif" style={{ fontSize: 16, lineHeight: 1.3 }}>{item.label}</div>
+                  {item.sub && <div className="font-mono" style={{ fontSize: 10, opacity: 0.55, marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.sub}</div>}
+                </div>
+                <ArrowUpRight size={14} style={{ opacity: 0.45 }} />
               </button>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* High-level numbers */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: `2px solid ${theme.ink}`, borderBottom: `2px solid ${theme.ink}`, margin: '40px 0' }}>
+        <BigStat label="Plan complete" value={overallPct.toFixed(0)} unit="%" sub="All four phases, by checkbox" />
+        <BigStat label="Patterns" value={patternsDone} unit="/28" sub="The spine of the year" border />
+        <BigStat label="Mock interviews" value={mocksDone} unit={`/${mockTargetTotal}`} sub="Across all types" border />
+      </div>
+
+      {/* Exit criteria for current phase */}
+      <div style={{ marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>§ 02 · Phase {currentPhase.n} exit criteria</span>
+          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>{exitDone}/{exit.length} met</span>
         </div>
-      )}
+        <div className="divider-dotted" style={{ marginBottom: 20 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 32px' }}>
+          {exit.map(c => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', borderBottom: `1px dotted ${theme.ruleDim}` }}>
+              <Flag size={11} style={{ color: c.done ? currentPhase.color : theme.ink, opacity: c.done ? 1 : 0.35, flexShrink: 0, alignSelf: 'center' }} />
+              <span className="serif" style={{ fontSize: 14.5, flex: 1, opacity: c.done ? 0.5 : 1, textDecoration: c.done ? 'line-through' : 'none' }}>{c.label}</span>
+              <span className="font-mono" style={{ fontSize: 10, opacity: 0.5 }}>{c.detail}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* The four phases */}
+      <div style={{ marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>§ 03 · The four phases</span>
+          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6 }}>Completion by phase</span>
+        </div>
+        <div className="divider-dotted" style={{ marginBottom: 24 }} />
+        <div>
+          {PHASES.map((p, i) => {
+            const pct = completions[i] * 100;
+            const isCurrent = p.n === stats.currentPhase;
+            return (
+              <button
+                key={p.n}
+                onClick={() => setView(`phase${p.n}`)}
+                className="btn-t hover-bg"
+                style={{
+                  display: 'grid', gridTemplateColumns: '24px 1fr 80px 1fr 80px', gap: 16,
+                  alignItems: 'center', padding: '16px 12px', width: '100%', textAlign: 'left',
+                  background: isCurrent ? p.color + '0d' : 'transparent', border: 'none',
+                  borderTop: i === 0 ? `1px solid ${theme.ink}` : `1px dotted ${theme.ruleDim}`,
+                  borderBottom: i === PHASES.length - 1 ? `1px solid ${theme.ink}` : 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <span className="font-mono" style={{ fontSize: 12, fontWeight: 700, color: p.color }}>0{p.n}</span>
+                <div>
+                  <div className="serif" style={{ fontSize: 17, fontWeight: isCurrent ? 600 : 400 }}>
+                    {p.name}
+                    {isCurrent && <span className="font-mono" style={{ fontSize: 9, marginLeft: 10, color: p.color, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700 }}>● Current</span>}
+                  </div>
+                  <div className="font-mono" style={{ fontSize: 10, opacity: 0.5, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{p.months}</div>
+                </div>
+                <span className="font-mono" style={{ fontSize: 12, opacity: 0.6, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
+                <div style={{ height: 3, background: theme.muted, borderRadius: 1, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: p.color, transition: 'width 0.5s' }} />
+                </div>
+                <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.4, textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+                  Open <ArrowUpRight size={10} />
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Year timeline + weekly rhythm */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+        <YearTimeline stats={stats} />
+        <WeeklyRhythm state={state} stats={stats} />
+      </div>
     </div>
   );
 }
 
-// ============================================================
-// Below: reused components from the original Overview
 // ============================================================
 
 function ProgressRing({ stats, currentPhase, theme }) {
@@ -268,7 +187,7 @@ function ProgressRing({ stats, currentPhase, theme }) {
   const strokeWidth = 2;
   const radius = (size - strokeWidth) / 2;
   const center = size / 2;
-  const progress = stats.progressPct / 100;
+  const progress = stats.yearPct / 100;
 
   const ticks = Array.from({ length: 12 }, (_, i) => {
     const angle = (i / 12) * 360 - 90;
@@ -327,7 +246,7 @@ function ProgressRing({ stats, currentPhase, theme }) {
         <circle cx={indicatorX} cy={indicatorY} r={10} fill="none" stroke={currentPhase.color} strokeWidth={1} opacity={0.4} />
         <text x={center} y={center - 10} textAnchor="middle" fontFamily="JetBrains Mono" fontSize={9} fill={theme.ink} opacity={0.55} letterSpacing="0.15em">YEAR</text>
         <text x={center} y={center + 18} textAnchor="middle" fontFamily="Fraunces, serif" fontSize={42} fontWeight={700} fill={theme.ink} letterSpacing="-0.03em">
-          {stats.progressPct.toFixed(0)}
+          {stats.yearPct.toFixed(0)}
           <tspan fontSize={24} fontWeight={300} fontStyle="italic" opacity={0.5} dx={2}>%</tspan>
         </text>
         <text x={center} y={center + 36} textAnchor="middle" fontFamily="JetBrains Mono" fontSize={9} fill={theme.ink} opacity={0.45} letterSpacing="0.15em">
@@ -338,51 +257,12 @@ function ProgressRing({ stats, currentPhase, theme }) {
   );
 }
 
-function Ledger({ stats, setView }) {
-  const theme = useTheme();
-  const items = [
-    { label: 'Courses (avg progress)', val: `${stats.courseAvg.toFixed(0)}%`, fill: stats.courseAvg, view: 'courses' },
-    { label: 'Coding Patterns', val: `${stats.patternsDone}/28`, fill: (stats.patternsDone / 28) * 100, view: 'patterns' },
-    { label: 'LLD Problems', val: `${stats.lldDone}/${LLD_PROBLEMS.length}`, fill: (stats.lldDone / LLD_PROBLEMS.length) * 100, view: 'design' },
-    { label: 'System Design Cases', val: `${stats.sdDone}/${SYSTEM_DESIGN_CASES.length}`, fill: (stats.sdDone / SYSTEM_DESIGN_CASES.length) * 100, view: 'design' },
-    { label: 'Cloud Labs', val: `${stats.labsDone}/${CLOUD_LABS.length}`, fill: (stats.labsDone / CLOUD_LABS.length) * 100, view: 'labs' },
-    { label: 'Mock Interviews', val: `${stats.mockTotal}/${stats.mockTargetTotal}`, fill: (stats.mockTotal / stats.mockTargetTotal) * 100, view: 'mocks' },
-  ];
-  return (
-    <div>
-      {items.map((item, i) => (
-        <button
-          key={item.label}
-          onClick={() => setView(item.view)}
-          className="btn-t hover-bg"
-          style={{
-            display: 'grid', gridTemplateColumns: '24px 1fr 60px 1fr 80px', gap: 16,
-            alignItems: 'center', padding: '14px 12px', width: '100%', textAlign: 'left',
-            background: 'transparent', border: 'none',
-            borderTop: i === 0 ? `1px solid ${theme.ink}` : `1px dotted ${theme.ruleDim}`,
-            borderBottom: i === items.length - 1 ? `1px solid ${theme.ink}` : 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <span className="font-mono" style={{ fontSize: 12, opacity: 0.4 }}>{String(i + 1).padStart(2, '0')}</span>
-          <span className="serif" style={{ fontSize: 16 }}>{item.label}</span>
-          <span className="font-mono" style={{ fontSize: 12, opacity: 0.6, textAlign: 'right' }}>{item.val}</span>
-          <div style={{ height: 2, background: theme.muted, borderRadius: 1, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${item.fill}%`, background: theme.ink, transition: 'width 0.5s' }} />
-          </div>
-          <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.4, textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-            Open <ArrowUpRight size={10} />
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function YearTimeline({ stats }) {
   const theme = useTheme();
   return (
     <div>
+      <div className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6, marginBottom: 8 }}>§ 04 · Timeline</div>
+      <div className="divider-dotted" style={{ marginBottom: 14 }} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 2 }}>
         {Array.from({ length: 12 }, (_, i) => {
           const month = i + 1;
@@ -393,23 +273,23 @@ function YearTimeline({ stats }) {
           return (
             <div key={month} style={{ position: 'relative' }}>
               <div style={{
-                height: 44,
+                height: 38,
                 background: isPast ? pObj.color : isCurrent ? pObj.color : pObj.accent + '55',
                 opacity: isPast ? 0.8 : 1,
                 border: isCurrent ? `2px solid ${theme.ink}` : 'none',
                 borderRadius: 2,
               }} />
-              <div className="font-mono" style={{ fontSize: 10, textAlign: 'center', marginTop: 8, opacity: 0.6 }}>M{month}</div>
+              <div className="font-mono" style={{ fontSize: 9, textAlign: 'center', marginTop: 6, opacity: 0.6 }}>M{month}</div>
             </div>
           );
         })}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 18 }}>
         {PHASES.map(p => (
-          <div key={p.n} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-            <div style={{ width: 10, height: 10, background: p.color, borderRadius: 1 }} />
-            <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.7 }}>
-              Phase 0{p.n} · {p.name}
+          <div key={p.n} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 10, height: 10, background: p.color, borderRadius: 1, flexShrink: 0 }} />
+            <span className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.7 }}>
+              0{p.n} · {p.name}
             </span>
           </div>
         ))}
@@ -418,90 +298,12 @@ function YearTimeline({ stats }) {
   );
 }
 
-function RecentActivity({ state }) {
+function WeeklyRhythm({ state, stats }) {
   const theme = useTheme();
-  const recent = [...state.sessions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const days = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - (13 - i));
-    const key = formatDate(d);
-    const hours = state.sessions
-      .filter(s => s.date === key)
-      .reduce((sum, s) => sum + (s.duration || 0), 0);
-    return { date: key, hours, dayOfWeek: d.getDay() };
-  });
-  const maxHours = Math.max(1, ...days.map(d => d.hours));
-
+  const rhythm = DAILY_RHYTHM[stats.currentPhase] || [];
   return (
     <div>
-      <div className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6, marginBottom: 8 }}>§ 05 · Recent sessions</div>
-      <div className="divider-dotted" style={{ marginBottom: 14 }} />
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 40 }}>
-          {days.map((d, i) => {
-            const isWeekend = d.dayOfWeek === 0 || d.dayOfWeek === 6;
-            const isToday = i === days.length - 1;
-            return (
-              <div
-                key={d.date}
-                title={`${d.date}: ${d.hours.toFixed(1)}h`}
-                style={{
-                  flex: 1,
-                  height: `${Math.max(2, (d.hours / maxHours) * 100)}%`,
-                  background: d.hours > 0 ? (isToday ? '#6b8e74' : theme.ink) : theme.muted,
-                  opacity: d.hours > 0 ? (isWeekend ? 0.55 : 1) : 0.35,
-                  borderRadius: 1,
-                  transition: 'height 0.4s, opacity 0.2s',
-                  cursor: 'help',
-                }}
-              />
-            );
-          })}
-        </div>
-        <div className="font-mono" style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.45, marginTop: 6, display: 'flex', justifyContent: 'space-between' }}>
-          <span>14 days ago</span>
-          <span>Today</span>
-        </div>
-      </div>
-
-      {recent.length === 0 ? (
-        <div className="serif" style={{ fontStyle: 'italic', fontSize: 16, opacity: 0.5, padding: '12px 0' }}>
-          No sessions logged yet. Head to the calendar to log your first.
-        </div>
-      ) : (
-        <div>
-          {recent.map((s, i) => {
-            const course = COURSES.find(c => c.id === s.courseId);
-            return (
-              <div key={s.id} style={{
-                display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 12,
-                padding: '10px 0',
-                borderBottom: i < recent.length - 1 ? `1px dotted ${theme.ruleDim}` : 'none',
-                alignItems: 'baseline',
-              }}>
-                <span className="font-mono" style={{ fontSize: 10, opacity: 0.5 }}>{s.date.slice(5)}</span>
-                <div>
-                  <div style={{ fontSize: 14 }}>{s.type}</div>
-                  {course && <div className="font-mono" style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>{course.name}</div>}
-                </div>
-                <span className="font-mono" style={{ fontSize: 12, fontWeight: 700 }}>{s.duration}h</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WeeklyRhythm({ state, objectives }) {
-  const theme = useTheme();
-  const rhythm = objectives.rhythm || [];
-  return (
-    <div>
-      <div className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6, marginBottom: 8 }}>§ 06 · Weekly rhythm · Phase {objectives.phase}</div>
+      <div className="font-mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.2em', opacity: 0.6, marginBottom: 8 }}>§ 05 · Weekly rhythm · Phase {stats.currentPhase}</div>
       <div className="divider-dotted" style={{ marginBottom: 12 }} />
       <div className="serif" style={{ fontSize: 13.5, lineHeight: 1.55, color: theme.inkDim }}>
         {rhythm.map((x, i) => (

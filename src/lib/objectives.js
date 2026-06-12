@@ -1,186 +1,241 @@
 import {
   COURSES, CODING_PATTERNS, CLOUD_LABS, LLD_PROBLEMS,
-  SYSTEM_DESIGN_CASES, MOCK_INTERVIEW_TARGETS, PHASES,
-  WEEKLY_CADENCE, DAILY_RHYTHM,
+  SYSTEM_DESIGN_CASES, PROJECTS, REVIEW_ITEMS, PYTHON_EXERCISES,
+  MOCK_TARGETS, EXIT_CRITERIA, PHASES,
 } from '../data/plan.js';
 
-// Compute literal objectives for the current week based on state and the current month.
-// Returns a structured object the OverviewView "Now" panel can render directly.
-export function computeNowObjectives(state, stats) {
-  const month = stats.currentMonth;
-  const phase = stats.currentPhase;
+// ------------------------------------------------------------
+// Course progress: derived from module checks when modules
+// exist; the coding-patterns course derives from the 28 pattern
+// checkboxes; otherwise fall back to the manual percent.
+// ------------------------------------------------------------
 
-  // 1) Active courses: those whose activeMonths include the current month, AND <100% complete.
-  const activeCourses = COURSES
-    .filter(c => c.activeMonths.includes(month))
-    .map(c => {
-      const progress = state.courseProgress[c.id] || 0;
-      const modulesDone = c.modules.filter(m => state.moduleChecks[m.id]).length;
-      const nextModule = c.modules.find(m => !state.moduleChecks[m.id]) || null;
-      return { course: c, progress, modulesDone, nextModule };
-    })
-    .filter(x => x.progress < 100 || (x.course.modules.length > 0 && x.modulesDone < x.course.modules.length));
-
-  // 2) Patterns for this month — explicit pattern numbers, then filter to those not done.
-  const monthPatterns = CODING_PATTERNS.filter(p => p.month === month);
-  const remainingMonthPatterns = monthPatterns.filter(p => !state.patterns[p.n]);
-  // Carryover: any earlier phase pattern still undone (gentle catch-up reminder)
-  const carryoverPatterns = CODING_PATTERNS
-    .filter(p => p.month < month && !state.patterns[p.n])
-    .slice(0, 3);
-
-  // 3) Labs — the next 1-2 phase-appropriate labs not yet done.
-  const remainingLabs = CLOUD_LABS
-    .filter(l => l.phase === phase && !state.labs[l.id])
-    .slice(0, 2);
-
-  // 4) LLD — only kick in starting month 6. Next undone, phase-appropriate.
-  const lldActive = month >= 6;
-  const nextLLD = lldActive
-    ? LLD_PROBLEMS.find(l => l.phase <= phase && !state.lldProblems[l.id]) || null
-    : null;
-
-  // 5) System Design cases — start month 4.
-  const sdActive = month >= 4;
-  const nextSD = sdActive
-    ? SYSTEM_DESIGN_CASES.find(s => s.phase <= phase && !state.sdCases[s.id]) || null
-    : null;
-
-  // 6) Mocks owed this month
-  const target = MOCK_INTERVIEW_TARGETS[month] || { sd: 0, coding: 0, lld: 0, sql: 0 };
-  const owedMocks = Object.entries(target)
-    .map(([type, want]) => {
-      const have = state.mockInterviews[`${month}-${type}`] || 0;
-      return { type, want, have, remaining: Math.max(0, want - have) };
-    })
-    .filter(m => m.remaining > 0);
-
-  const cadence = WEEKLY_CADENCE[phase];
-  const rhythm = DAILY_RHYTHM[phase];
-
-  return {
-    month, phase,
-    phaseInfo: PHASES[phase - 1],
-    activeCourses,
-    monthPatterns,
-    remainingMonthPatterns,
-    carryoverPatterns,
-    remainingLabs,
-    nextLLD, lldActive,
-    nextSD, sdActive,
-    owedMocks,
-    cadence, rhythm,
-  };
+export function courseProgressPct(course, state) {
+  if (course.id === 'coding_patterns') {
+    const done = CODING_PATTERNS.filter(p => state.patterns[p.n]).length;
+    return Math.round((done / CODING_PATTERNS.length) * 100);
+  }
+  if (course.id === 'pyex') {
+    const done = PYTHON_EXERCISES.filter(e => state.pyexChecks[e.id]).length;
+    return Math.round((done / PYTHON_EXERCISES.length) * 100);
+  }
+  if (course.modules.length > 0) {
+    const done = course.modules.filter(m => state.moduleChecks[m.id]).length;
+    return Math.round((done / course.modules.length) * 100);
+  }
+  return state.courseProgress[course.id] || 0;
 }
 
-// Return a flattened list of "do these THIS week" items — used by the compact next-up card.
-export function computeThisWeek(objectives) {
-  const items = [];
-  const phase = objectives.phaseInfo;
+// ------------------------------------------------------------
+// Everything that belongs to a phase, grouped into sections.
+// PhaseView renders this directly; Overview pulls "next up"
+// from it. Every item: { id, kind, label, done, sub?, url? }.
+// ------------------------------------------------------------
 
-  // Top active course's next module
-  objectives.activeCourses.slice(0, 2).forEach(ac => {
-    if (ac.nextModule) {
-      items.push({
-        kind: 'course',
-        track: ac.course.track,
-        color: phase.color,
-        label: `${ac.course.name}: ${ac.nextModule.name}`,
-        hint: `Next module · ${ac.course.weeklyHours}/wk`,
-        id: ac.nextModule.id,
-        view: 'courses',
-      });
-    } else if (ac.progress < 100) {
-      items.push({
-        kind: 'course',
-        track: ac.course.track,
-        color: phase.color,
-        label: `${ac.course.name}`,
-        hint: `Continue · ${ac.progress}% done`,
-        id: ac.course.id,
-        view: 'courses',
-      });
+export function computePhaseItems(phaseN, state) {
+  const courses = COURSES.filter(c => c.phase === phaseN && !c.ongoing);
+  const patterns = CODING_PATTERNS.filter(p => p.phase === phaseN);
+  const labs = CLOUD_LABS.filter(l => l.phase === phaseN);
+  const sdCases = SYSTEM_DESIGN_CASES.filter(s => s.phase === phaseN);
+  const lldProblems = LLD_PROBLEMS.filter(l => l.phase === phaseN);
+  const project = PROJECTS.find(p => p.phase === phaseN) || null;
+  const reviews = REVIEW_ITEMS.filter(r => r.phase === phaseN);
+  const mockTargets = MOCK_TARGETS[phaseN] || {};
+
+  const sections = [];
+
+  sections.push({
+    key: 'courses', title: 'Courses',
+    items: courses.map(c => ({
+      id: c.id, kind: 'course', label: c.name, url: c.url,
+      done: courseProgressPct(c, state) >= 100,
+      pct: courseProgressPct(c, state),
+      course: c,
+    })),
+  });
+
+  sections.push({
+    key: 'patterns', title: 'Coding patterns',
+    sourceNote: 'Chapters of Grokking the Coding Interview Patterns (Python) — each link opens the chapter',
+    items: patterns.map(p => ({
+      id: p.n, kind: 'pattern', label: `#${String(p.n).padStart(2, '0')} — ${p.name}`,
+      sub: 'Course chapter', url: p.url,
+      done: !!state.patterns[p.n],
+    })),
+  });
+
+  const pyex = PYTHON_EXERCISES.filter(e => e.phase === phaseN);
+  if (pyex.length) {
+    sections.push({
+      key: 'pyex', title: 'Python practice',
+      sourceNote: 'Problems from Educative\'s Python practice set, matched to this phase\'s patterns',
+      items: pyex.map(e => ({
+        id: e.id, kind: 'pyex', label: e.name, sub: e.topic,
+        url: 'https://www.educative.io/coding-practice/python-exercises',
+        done: !!state.pyexChecks[e.id],
+      })),
+    });
+  }
+
+  const sdCourse = COURSES.find(c => c.id === 'sd_modern');
+  const lldCourse = COURSES.find(c => c.id === 'lld');
+  if (sdCases.length || lldProblems.length) {
+    sections.push({
+      key: 'design', title: 'Design write-ups',
+      sourceNote: 'Case studies from Grokking Modern System Design · problems from Grokking the LLD Interview',
+      items: [
+        ...sdCases.map(s => ({
+          id: s.id, kind: 'sd-case', label: s.name,
+          sub: 'Case study · Grokking Modern System Design', url: sdCourse?.url,
+          done: !!state.sdCases[s.id],
+        })),
+        ...lldProblems.map(l => ({
+          id: l.id, kind: 'lld', label: l.name,
+          sub: 'Design problem · Grokking the LLD Interview', url: lldCourse?.url,
+          done: !!state.lldProblems[l.id],
+        })),
+      ],
+    });
+  }
+
+  if (labs.length) {
+    sections.push({
+      key: 'labs', title: 'Cloud labs',
+      items: labs.map(l => ({
+        id: l.id, kind: 'lab', label: l.name, sub: l.category, url: l.url,
+        done: !!state.labs[l.id],
+      })),
+    });
+  }
+
+  if (project) {
+    sections.push({
+      key: 'project', title: 'Phase project',
+      items: [{
+        id: project.id, kind: 'project', label: project.name, sub: project.desc,
+        done: !!state.projects[project.id],
+      }],
+    });
+  }
+
+  if (reviews.length) {
+    sections.push({
+      key: 'review', title: 'Review & career',
+      items: reviews.map(r => ({
+        id: r.id, kind: 'review', label: r.name, sub: r.desc,
+        done: !!state.reviews[r.id],
+      })),
+    });
+  }
+
+  // Mocks are counters, not checkboxes — kept separate from sections.
+  const mocks = Object.entries(mockTargets).map(([type, target]) => ({
+    type, target, have: state.mocks[`${phaseN}-${type}`] || 0,
+  }));
+
+  return { phaseN, phaseInfo: PHASES[phaseN - 1], sections, mocks };
+}
+
+// Overall completion fraction for a phase (checkbox items + mock counts).
+export function phaseCompletion(phaseN, state) {
+  const { sections, mocks } = computePhaseItems(phaseN, state);
+  let total = 0, done = 0;
+  for (const s of sections) {
+    for (const it of s.items) {
+      if (it.kind === 'course') {
+        // weight courses by their module count so a 10-module course
+        // isn't worth the same as one checkbox
+        const n = Math.max(1, it.course.modules.length);
+        total += n;
+        done += Math.round((it.pct / 100) * n);
+      } else {
+        total += 1;
+        done += it.done ? 1 : 0;
+      }
+    }
+  }
+  for (const m of mocks) {
+    total += m.target;
+    done += Math.min(m.have, m.target);
+  }
+  return total === 0 ? 0 : done / total;
+}
+
+// ------------------------------------------------------------
+// Exit criteria — evaluate the declarative specs in plan.js.
+// Returns [{ id, label, done, detail }].
+// ------------------------------------------------------------
+
+export function computeExitCriteria(phaseN, state) {
+  const specs = EXIT_CRITERIA[phaseN] || [];
+  return specs.map(spec => {
+    switch (spec.type) {
+      case 'patterns': {
+        const pats = CODING_PATTERNS.filter(p =>
+          spec.label.startsWith('All') ? true : p.phase === phaseN);
+        const done = pats.filter(p => state.patterns[p.n]).length;
+        return { ...spec, done: done >= pats.length, detail: `${done}/${pats.length}` };
+      }
+      case 'course': {
+        const c = COURSES.find(x => x.id === spec.course);
+        const pct = c ? courseProgressPct(c, state) : 0;
+        return { ...spec, done: pct >= spec.min, detail: `${pct}%` };
+      }
+      case 'project': {
+        return { ...spec, done: !!state.projects[spec.project], detail: state.projects[spec.project] ? 'shipped' : 'not yet' };
+      }
+      case 'mocks': {
+        const targets = MOCK_TARGETS[phaseN] || {};
+        const entries = Object.entries(targets);
+        const met = entries.filter(([t, want]) => (state.mocks[`${phaseN}-${t}`] || 0) >= want).length;
+        const have = entries.reduce((s, [t]) => s + (state.mocks[`${phaseN}-${t}`] || 0), 0);
+        const want = entries.reduce((s, [, w]) => s + w, 0);
+        return { ...spec, done: met === entries.length, detail: `${have}/${want}` };
+      }
+      case 'design-sd': {
+        // cumulative across all phases up to this one
+        const pool = SYSTEM_DESIGN_CASES.filter(s => s.phase <= phaseN);
+        const done = pool.filter(s => state.sdCases[s.id]).length;
+        return { ...spec, done: done >= spec.min, detail: `${done}/${spec.min}` };
+      }
+      case 'design-lld': {
+        const pool = LLD_PROBLEMS.filter(l => l.phase <= phaseN);
+        const done = pool.filter(l => state.lldProblems[l.id]).length;
+        return { ...spec, done: done >= spec.min, detail: `${done}/${spec.min}` };
+      }
+      case 'review': {
+        const items = REVIEW_ITEMS.filter(r => r.phase === phaseN);
+        const done = items.filter(r => state.reviews[r.id]).length;
+        return { ...spec, done: done >= items.length, detail: `${done}/${items.length}` };
+      }
+      default:
+        return { ...spec, done: false, detail: '?' };
     }
   });
+}
 
-  // Patterns: explicit numbers and names
-  objectives.remainingMonthPatterns.forEach(p => {
-    items.push({
-      kind: 'pattern',
-      track: 'Coding',
-      color: phase.color,
-      label: `Pattern #${p.n} — ${p.name}`,
-      hint: 'Target this month',
-      id: p.n,
-      view: 'patterns',
-    });
-  });
+// ------------------------------------------------------------
+// "Next up" — the first unchecked item per section of a phase,
+// used by the Overview. Mocks owed appended as one entry.
+// ------------------------------------------------------------
 
-  // Carryover patterns
-  objectives.carryoverPatterns.forEach(p => {
+export function computeNextUp(phaseN, state, limitPerSection = 1) {
+  const { sections, mocks, phaseInfo } = computePhaseItems(phaseN, state);
+  const items = [];
+  for (const s of sections) {
+    const next = s.items.filter(it => !it.done).slice(0, limitPerSection);
+    for (const it of next) {
+      items.push({ ...it, section: s.title, sectionKey: s.key, color: phaseInfo.color });
+    }
+  }
+  const owed = mocks.filter(m => m.have < m.target);
+  if (owed.length) {
     items.push({
-      kind: 'pattern',
-      track: 'Coding',
-      color: '#a6614a',
-      label: `Catch-up: Pattern #${p.n} — ${p.name}`,
-      hint: 'Carryover from earlier month',
-      id: p.n,
-      view: 'patterns',
-    });
-  });
-
-  // Labs
-  objectives.remainingLabs.forEach(l => {
-    items.push({
-      kind: 'lab',
-      track: l.category,
-      color: phase.color,
-      label: `Lab: ${l.name}`,
-      hint: `${l.category} · Phase ${l.phase}`,
-      id: l.id,
-      view: 'labs',
-    });
-  });
-
-  // SD case
-  if (objectives.nextSD) {
-    items.push({
-      kind: 'sd',
-      track: 'System Design',
-      color: phase.color,
-      label: `SD case: ${objectives.nextSD.name}`,
-      hint: 'Next case study',
-      id: objectives.nextSD.id,
-      view: 'design',
+      id: `mocks-${phaseN}`, kind: 'mock',
+      label: 'Mock interviews owed this phase',
+      sub: owed.map(m => `${m.target - m.have} ${m.type.toUpperCase()}`).join(' · '),
+      section: 'Mocks', sectionKey: 'mocks', color: phaseInfo.color, done: false,
     });
   }
-
-  // LLD
-  if (objectives.nextLLD) {
-    items.push({
-      kind: 'lld',
-      track: 'LLD',
-      color: phase.color,
-      label: `LLD: ${objectives.nextLLD.name}`,
-      hint: 'Next OOP problem',
-      id: objectives.nextLLD.id,
-      view: 'design',
-    });
-  }
-
-  // Mocks
-  if (objectives.owedMocks.length > 0) {
-    const text = objectives.owedMocks.map(m => `${m.remaining} ${m.type.toUpperCase()}`).join(', ');
-    items.push({
-      kind: 'mock',
-      track: 'Mocks',
-      color: '#8b5a8c',
-      label: `Mock interviews owed this month`,
-      hint: text,
-      id: 'mocks',
-      view: 'mocks',
-    });
-  }
-
   return items;
 }
