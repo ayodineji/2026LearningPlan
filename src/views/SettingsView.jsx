@@ -86,7 +86,7 @@ export function SettingsView({ state, update, onReset }) {
           </div>
           <div className="divider-dotted" style={{ marginBottom: 12 }} />
           <div className="serif" style={{ fontSize: 14, marginBottom: 14, opacity: 0.8, lineHeight: 1.55 }}>
-            Progress and notes live in a SQLite database backed by IndexedDB — survives across deploys and browser updates. Export the <code>.sqlite</code> file to back up, share across machines, or roll back.
+            Progress and notes live in a SQLite database stored in <strong>this browser, on this device</strong>, under this exact URL — there is no server copy. It survives deploys and browser updates, but a different browser, a different machine, or a Vercel preview URL is a separate, empty database. Export the <code>.sqlite</code> file to back up or move progress between them.
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button

@@ -2,6 +2,17 @@
 // Schema is intentionally simple: one kv table for the legacy JSON state shape,
 // plus a structured notes table so the slide-out editor can attach larger / richer
 // notes to anything in the plan. Exposes JSON + binary .sqlite export/import.
+//
+// Storage is browser-local: the database file lives in this browser profile's
+// IndexedDB, scoped to this origin. A different device, a different browser, or a
+// different deploy URL (a Vercel preview vs production) is a different database.
+// Settings → Download .sqlite is the only way progress moves between them.
+
+import initSqlJs from 'sql.js';
+// Served from our own origin and content-hashed by Vite. Bundling this rather
+// than pulling sql.js off a CDN at runtime means a blocked or unreachable CDN
+// can no longer silently disable every write.
+import sqlWasmUrl from 'sql.js/dist/sql-wasm-browser.wasm?url';
 
 const IDB_NAME = 'edu_plan_db';
 const IDB_STORE = 'blobs';
@@ -9,37 +20,83 @@ const IDB_KEY = 'sqlite-v1';
 const LEGACY_LS_KEY = 'edu_plan_v2';
 
 let SQL = null;
+let sqlLoading = null;
 let dbInstance = null;
+let dbOpening = null;
 let saveTimer = null;
+
+// ---------- storage health ----------
+// Persistence failures used to surface only as a console error, so the UI looked
+// like it was saving when nothing was. Anything that can lose data reports here
+// and the dashboard renders a banner.
+
+let status = { ok: true, error: null };
+const statusListeners = new Set();
+
+function setStatus(next) {
+  status = next;
+  statusListeners.forEach(fn => { try { fn(status); } catch (e) {} });
+}
+
+function reportFailure(where, err) {
+  console.error(`SQLite ${where} failed`, err);
+  setStatus({ ok: false, error: `${where}: ${err?.message || String(err)}` });
+}
+
+function reportOk() {
+  if (!status.ok) setStatus({ ok: true, error: null });
+}
+
+export function getStorageStatus() {
+  return status;
+}
+
+// Returns an unsubscribe function.
+export function subscribeStorageStatus(fn) {
+  statusListeners.add(fn);
+  return () => statusListeners.delete(fn);
+}
 
 async function loadSqlJs() {
   if (SQL) return SQL;
-  // Load sql.js from CDN — keeps the bundle small.
-  if (!window.initSqlJs) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.min.js';
-      s.onload = resolve;
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
+  // Cached so concurrent callers share one initialisation.
+  if (!sqlLoading) {
+    sqlLoading = initSqlJs({ locateFile: () => sqlWasmUrl })
+      .then(mod => { SQL = mod; return mod; })
+      .catch(err => { sqlLoading = null; throw err; });
   }
-  SQL = await window.initSqlJs({
-    locateFile: (file) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`,
-  });
-  return SQL;
+  return sqlLoading;
 }
 
+// The live connection is cached rather than reopened per write. Opening one is
+// async, and on the unload path there is no time for that round trip — holding
+// it open is what lets the last save start synchronously. See persistSync().
+let idbConn = null;
+let idbConnPromise = null;
+
 function openIdb() {
-  return new Promise((resolve, reject) => {
+  if (idbConn) return Promise.resolve(idbConn);
+  if (idbConnPromise) return idbConnPromise;
+  idbConnPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(IDB_NAME, 1);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      // Drop the cache if the connection dies, so the next write reopens.
+      db.onclose = () => { idbConn = null; idbConnPromise = null; };
+      db.onversionchange = () => { try { db.close(); } catch (e) {} idbConn = null; idbConnPromise = null; };
+      idbConn = db;
+      resolve(db);
+    };
+    req.onerror = () => { idbConnPromise = null; reject(req.error); };
+    // Private-mode Safari and some locked-down profiles neither resolve nor
+    // reject; without this the very first save would hang forever.
+    req.onblocked = () => { idbConnPromise = null; reject(new Error('IndexedDB blocked')); };
   });
+  return idbConnPromise;
 }
 
 async function idbGet(key) {
@@ -59,6 +116,7 @@ async function idbPut(key, value) {
     tx.objectStore(IDB_STORE).put(value, key);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('IndexedDB transaction aborted'));
   });
 }
 
@@ -80,29 +138,76 @@ function ensureSchema(db) {
 
 export async function openDB() {
   if (dbInstance) return dbInstance;
-  const sql = await loadSqlJs();
-  const saved = await idbGet(IDB_KEY);
-  if (saved) {
-    dbInstance = new sql.Database(new Uint8Array(saved));
-  } else {
-    dbInstance = new sql.Database();
+  // Cached so that a note read and a state write racing on first paint can't
+  // each build their own Database — whichever exported last used to win, and
+  // the other's rows were silently dropped.
+  if (!dbOpening) {
+    dbOpening = (async () => {
+      const sql = await loadSqlJs();
+      let saved = null;
+      try {
+        saved = await idbGet(IDB_KEY);
+      } catch (e) {
+        // A read failure must not cost us the ability to save later.
+        reportFailure('load', e);
+      }
+      const db = saved ? new sql.Database(new Uint8Array(saved)) : new sql.Database();
+      ensureSchema(db);
+      dbInstance = db;
+      return db;
+    })().catch(err => {
+      dbOpening = null;
+      reportFailure('open', err);
+      throw err;
+    });
   }
-  ensureSchema(dbInstance);
-  return dbInstance;
+  return dbOpening;
 }
 
 async function persistNow() {
   if (!dbInstance) return;
-  const bytes = dbInstance.export();
-  await idbPut(IDB_KEY, bytes);
+  try {
+    const bytes = dbInstance.export();
+    await idbPut(IDB_KEY, bytes);
+    reportOk();
+  } catch (e) {
+    reportFailure('save', e);
+    throw e;
+  }
 }
 
-// Debounced save — coalesces rapid edits (typing in note panel, slider, etc).
-export function scheduleSave() {
+// Best-effort save with no awaits before the write is queued. The browser only
+// guarantees an IndexedDB transaction survives teardown if it was opened while
+// the page was still alive, so on unload we must reach `put()` synchronously —
+// an `await` first (as a fresh connection would need) loses the write outright.
+// Returns false if there is no live connection to ride, in which case the caller
+// falls back to the async path.
+function persistSync() {
+  if (!dbInstance || !idbConn) return false;
+  try {
+    const bytes = dbInstance.export();
+    const tx = idbConn.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(bytes, IDB_KEY);
+    return true;
+  } catch (e) {
+    console.error('SQLite unload save failed', e);
+    return false;
+  }
+}
+
+// Debounced save. `delay` is how long to coalesce for:
+//   0   — discrete actions (ticking a box, changing a setting). Still coalesces
+//         a burst within the same task, but commits on the next tick, so closing
+//         the tab straight after a click cannot lose it. Browsers abort
+//         IndexedDB transactions started during navigation, so the only reliable
+//         way to survive that is to have already written.
+//   400 — free text (the note editor), where a write per keystroke is wasteful.
+export function scheduleSave(delay = 400) {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    persistNow().catch(e => console.error('SQLite persist failed', e));
-  }, 400);
+    saveTimer = null;
+    persistNow().catch(() => {});
+  }, delay);
 }
 
 // Cancel any pending debounced save and persist immediately.
@@ -112,6 +217,32 @@ export async function flushSave() {
     saveTimer = null;
   }
   await persistNow();
+}
+
+// Best-effort persist on the way out, covering note text still inside its 400ms
+// debounce. `pagehide` and the hidden transition of `visibilitychange` are the
+// two events that actually fire on mobile Safari and on Android task-switching,
+// where `beforeunload` does not. This is a backstop only: browsers may abort an
+// IndexedDB transaction opened during teardown, which is why progress writes go
+// through scheduleSave(0) and never depend on this firing.
+export function installUnloadFlush() {
+  if (typeof window === 'undefined') return () => {};
+  const flush = () => {
+    if (!saveTimer) return; // nothing pending
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    // Synchronous first — it is the only variant that reliably commits while
+    // the page is being torn down. The async path is just a fallback for the
+    // case where no connection is open yet (i.e. nothing has been saved).
+    if (!persistSync()) persistNow().catch(() => {});
+  };
+  const onVisibility = () => { if (document.visibilityState === 'hidden') flush(); };
+  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', onVisibility);
+  return () => {
+    window.removeEventListener('pagehide', flush);
+    document.removeEventListener('visibilitychange', onVisibility);
+  };
 }
 
 // ---------- state JSON (legacy shape) ----------
@@ -149,7 +280,7 @@ export async function writeStateJson(obj) {
     ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
   stmt.run({ $v: json });
   stmt.free();
-  scheduleSave();
+  scheduleSave(0);   // progress toggles must not sit in a debounce window
 }
 
 // ---------- notes table ----------
@@ -173,7 +304,7 @@ export async function writeNote(targetType, targetId, body) {
   `);
   stmt.run({ $t: targetType, $i: String(targetId), $b: body || '', $u: now });
   stmt.free();
-  scheduleSave();
+  scheduleSave();    // typing: coalesce keystrokes, flushed on close/hide
 }
 
 export async function listAllNotes() {
@@ -198,6 +329,7 @@ export async function importSqlite(bytes) {
     try { dbInstance.close(); } catch (e) {}
   }
   dbInstance = new sql.Database(new Uint8Array(bytes));
+  dbOpening = Promise.resolve(dbInstance);
   ensureSchema(dbInstance);
   await persistNow();
 }
@@ -208,6 +340,7 @@ export async function resetDb() {
     try { dbInstance.close(); } catch (e) {}
   }
   dbInstance = new sql.Database();
+  dbOpening = Promise.resolve(dbInstance);
   ensureSchema(dbInstance);
   // Also clear the legacy localStorage state so the first-boot migration
   // can't restore pre-reset progress.

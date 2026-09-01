@@ -10,7 +10,7 @@ import { SettingsView } from './views/SettingsView.jsx';
 import { CompilerView } from './views/CompilerView.jsx';
 import { PLAN_START_DEFAULT } from './data/plan.js';
 import { computeStats } from './lib/utils.js';
-import { readStateJson, writeStateJson, readNote, writeNote, resetDb, flushSave } from './storage/db.js';
+import { readStateJson, writeStateJson, readNote, writeNote, resetDb, flushSave, installUnloadFlush, subscribeStorageStatus, getStorageStatus } from './storage/db.js';
 
 const defaultState = {
   startDate: PLAN_START_DEFAULT,
@@ -64,6 +64,14 @@ export default function LearningDashboard() {
     writeStateJson(state).catch(e => console.error('SQLite write failed', e));
   }, [state, loaded]);
 
+  // Flush any pending debounced write when the tab is hidden or closed.
+  useEffect(() => installUnloadFlush(), []);
+
+  // Surface persistence failures instead of leaving them in the console, where
+  // the UI would keep looking like it was saving.
+  const [storage, setStorage] = useState(getStorageStatus);
+  useEffect(() => subscribeStorageStatus(setStorage), []);
+
   const stats = useMemo(() => computeStats(state), [state]);
 
   const update = (patch) => setState(s => ({ ...s, ...patch }));
@@ -84,6 +92,9 @@ export default function LearningDashboard() {
     setNoteValue(body || '');
   };
   const closeNote = () => {
+    // Commit any note text still inside its debounce window while the page is
+    // definitely alive, rather than relying on the unload backstop.
+    flushSave().catch(e => console.error('SQLite flush failed', e));
     setNoteTarget(null);
     setNoteValue('');
     setNoteRefreshKey(k => k + 1); // refresh NotesView list
@@ -120,6 +131,20 @@ export default function LearningDashboard() {
       <div style={{ minHeight: '100vh', background: theme.bg, color: theme.ink, fontFamily: '"Inter", sans-serif', position: 'relative', transition: 'background 0.3s, color 0.3s' }}>
         <GlobalStyles theme={theme} />
         <div className="grain" />
+
+        {!storage.ok && (
+          <div
+            role="alert"
+            className="font-mono"
+            style={{
+              position: 'relative', zIndex: 5, background: '#a6614a', color: '#fff',
+              padding: '10px 32px', fontSize: 11, letterSpacing: '0.06em', lineHeight: 1.5,
+            }}
+          >
+            Progress is not being saved — {storage.error}. Your changes live only in this
+            tab. Export from Settings before closing it.
+          </div>
+        )}
 
         <Header view={view} setView={setView} stats={stats} theme={theme} toggleTheme={toggleTheme} />
 
