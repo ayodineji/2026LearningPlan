@@ -36,6 +36,8 @@ export const PHASES = [
 // COURSES — each belongs to one phase page. `ongoing: true`
 // courses span the whole year and appear on every phase page.
 // Progress is derived from module checks when modules exist.
+// Courses with an entry in data/fieldNotes.js render those notes
+// inline on the course card.
 // ============================================================
 
 export const COURSES = [

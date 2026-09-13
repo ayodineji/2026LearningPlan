@@ -2,7 +2,9 @@ import React from 'react';
 import { ExternalLink, FileText, ChevronRight, Minus, Plus, Flag } from 'lucide-react';
 import { useTheme } from '../theme.jsx';
 import { Checkbox } from '../components/common.jsx';
+import { FieldNotes } from '../components/FieldNotes.jsx';
 import { COURSES, MOCK_TYPE_LABELS, PROJECTS, REVIEW_ITEMS } from '../data/plan.js';
+import { FIELD_NOTES } from '../data/fieldNotes.js';
 import { computePhaseItems, computeExitCriteria, phaseCompletion, courseProgressPct } from '../lib/objectives.js';
 
 // One page per phase: everything the phase contains, as flat
@@ -220,6 +222,7 @@ function CourseCard({ item, phaseInfo, state, handlers, openNote, isNext }) {
   const c = item.course;
   const [open, setOpen] = React.useState(isNext);
   const pct = item.pct;
+  const notes = FIELD_NOTES[c.id];
 
   return (
     <div style={{
@@ -233,7 +236,7 @@ function CourseCard({ item, phaseInfo, state, handlers, openNote, isNext }) {
       }}>
         <div>
           <div className="font-mono" style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.18em', color: phaseInfo.color, fontWeight: 700, marginBottom: 4 }}>
-            {c.track} · ~{c.hours}h · {c.weeklyHours}/wk
+            {c.track} · ~{c.hours}h · {c.weeklyHours}/wk{notes ? ' · Field notes' : ''}
           </div>
           <div className="font-display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em' }}>{c.name}</div>
           {c.note && <div className="serif" style={{ fontSize: 13, fontStyle: 'italic', opacity: 0.65, marginTop: 4, lineHeight: 1.45 }}>{c.note}</div>}
@@ -261,6 +264,7 @@ function CourseCard({ item, phaseInfo, state, handlers, openNote, isNext }) {
               </div>
             );
           })}
+          {notes && <FieldNotes notes={notes} color={phaseInfo.color} />}
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
             <a href={c.url} target="_blank" rel="noopener noreferrer" className="btn-t font-mono"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', color: theme.ink, textDecoration: 'none', border: `1px solid ${theme.ink}`, borderRadius: 2, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
