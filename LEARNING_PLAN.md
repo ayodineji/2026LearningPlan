@@ -28,7 +28,18 @@ Four 3-month phases. Each phase page in the dashboard shows everything the phase
 ### Ongoing tracks (never rotate out)
 
 - **Coding patterns** — the 28 chapters of Grokking the Coding Interview Patterns (Python), distributed 9/9/6/4 across phases. Each phase page links straight to the chapters. Two 1.5h sessions/week, every week.
-- **Python practice exercises** — all 63 named problems from Educative's Python practice set, assigned to the phase whose patterns they reinforce (sliding window in Phase 1, backtracking/DP in Phase 2, graphs in Phase 3, bitwise/stacks in Phase 4). 1–2/week keeps pace.
+- **Python practice exercises** — 27 problems from Educative's Python practice set: one reinforcement rep per pattern, two for the patterns that carry the most interview weight (DP, backtracking, sliding window, graphs). ~0.5/week. **This list was cut from 63 deliberately.** The 28 pattern chapters already contain the bulk of the reps, so a second full pass over the same topics was duplication, and raw problem count has steep diminishing returns well before the numbers people quote.
+
+### What the coding track is *not* preparing you for
+
+Every coding rep above is greenfield and solo: read a prompt, write a function from nothing. That is not where the format is heading. Google is piloting an AI-assisted coding round (its own model available to the candidate, described internally as "human-led, AI-assisted") built around **reading, debugging, and optimizing existing code**, scored on prompt quality, output validation, and debugging. Meta began rolling out AI-enabled coding interviews in late 2025; Canva rewrote its problems so a single prompt can't solve them.
+
+The plan answers this in two places rather than by adding another course:
+
+- **AI-assisted mocks** — a mock type of its own (1 in Phase 2, 2 in Phase 3, 3 in Phase 4). Run them with an assistant open and the same rule the real round applies: you own the design and you must catch the tool when it is wrong.
+- **Debug and extend an unfamiliar repo** (Phase 2 review item) — clone something you didn't write, fix a real bug, add a test. The first non-greenfield rep in the plan.
+
+The algorithm screen is still the gate — it has not gone away at senior level, and cutting the 28 patterns to chase this trend would be trading the gate for the differentiator. What changed is its *weight*: system design now carries more of the senior hiring decision, which is why Phase 3 moves half an hour a week from coding to system design.
 
 ### One shipped project per phase — non-negotiable
 
@@ -64,7 +75,7 @@ The plan is 11–12 hours/week. Below 9h/week for two consecutive weeks is a str
 | **Sat** | Mock interview (1h) | Notes review (0.5h) | 1.5h |
 | **Sun** | Buffer / off day | — | 0–1h |
 
-**Why mocks every Saturday**: one mock teaches more than three solo problems, and the fixed slot forces a hard deadline on the week's prep. Mock targets are per-phase (`MOCK_TARGETS` in `plan.js`); Phase 4 adds **GenAI mocks** — the four built into Grokking the Generative AI System Design.
+**Why mocks every Saturday**: one mock teaches more than three solo problems, and the fixed slot forces a hard deadline on the week's prep. Mock targets are per-phase (`MOCK_TARGETS` in `plan.js`); Phase 4 adds **GenAI mocks** — the four built into Grokking the Generative AI System Design — and **AI-assisted mocks** run from Phase 2 on. Phase 4's coding mocks were cut 6 → 4: by month 10 the gate is either passed or it isn't, and those hours are worth more spent on design and the AI-assisted format.
 
 **Why labs land on Friday**: hands-on click-through work fits the lowest-cognitive-load slot. The lab list was deliberately curated from 37 to 22 — duplicates cut — so every lab earns its hour. Phase 4 has no labs by design.
 
@@ -128,7 +139,7 @@ Interview skill without market contact is theory. Built into the plan:
 - [ ] All 28 coding patterns implemented + noted in your own words
 - [ ] All courses on all four phase pages ≥ 90%
 - [ ] All 4 phases passed their exit criteria
-- [ ] Mock targets met every phase (incl. 4 GenAI mocks)
+- [ ] Mock targets met every phase (incl. 4 GenAI + 6 AI-assisted mocks)
 - [ ] ≥ 10 LLD + ≥ 10 system-design write-ups
 - [ ] **4 shipped, public projects** — C# app (design-led), LLM-powered web app, pipeline + RAG, agentic capstone
 - [ ] STAR bank, refreshed resume, 5 calibration applications submitted

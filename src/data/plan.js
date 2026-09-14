@@ -252,8 +252,8 @@ export const COURSES = [
     id: 'pyex',
     name: 'Python Practice Exercises',
     url: 'https://www.educative.io/coding-practice/python-exercises',
-    hours: 35, phase: 1, track: 'Coding', weeklyHours: '1h', ongoing: true,
-    note: 'Background reps: 1-2 exercises/week, all year. All 63 named problems are listed on the phase pages, matched to each phase\'s patterns.',
+    hours: 15, phase: 1, track: 'Coding', weeklyHours: '0.5h', ongoing: true,
+    note: 'Background reps: one problem per pattern, not a second full course. Trimmed 63 -> 27 — the pattern chapters already carry the volume, and raw problem count has steep diminishing returns.',
     modules: [],
   },
 ];
@@ -265,38 +265,24 @@ export const COURSES = [
 // ============================================================
 
 export const PYTHON_EXERCISES = [
+  // One reinforcement rep per pattern — two for the patterns that carry
+  // the most interview weight. Volume was cut 63 -> 27 deliberately: the 28
+  // pattern chapters already contain the bulk of the reps.
   // Phase 1 — two pointers, sliding window, heaps, intervals, linked lists
   { id: 'py_7', phase: 1, name: 'Valid Palindrome', topic: 'Two pointers' },
-  { id: 'py_62', phase: 1, name: 'Valid Palindrome II', topic: 'Two pointers' },
-  { id: 'py_40', phase: 1, name: 'Count Pairs Whose Sum is Less than Target', topic: 'Two pointers' },
   { id: 'py_2', phase: 1, name: 'Longest Substring without Repeating Characters', topic: 'Sliding window' },
-  { id: 'py_1', phase: 1, name: 'Find All Anagrams in a String', topic: 'Sliding window' },
-  { id: 'py_12', phase: 1, name: 'Longest Repeating Character Replacement', topic: 'Sliding window' },
   { id: 'py_4', phase: 1, name: 'Minimum Window Substring', topic: 'Sliding window' },
-  { id: 'py_60', phase: 1, name: 'Sliding Window Maximum', topic: 'Sliding window' },
-  { id: 'py_33', phase: 1, name: 'Moving Average from Data Stream', topic: 'Sliding window' },
-  { id: 'py_27', phase: 1, name: 'Sliding Window Median', topic: 'Two heaps' },
   { id: 'py_30', phase: 1, name: 'Find Median from a Data Stream', topic: 'Two heaps' },
   { id: 'py_6', phase: 1, name: 'Task Scheduler', topic: 'Heap / greedy' },
   { id: 'py_21', phase: 1, name: 'Insert Interval', topic: 'Intervals' },
   { id: 'py_46', phase: 1, name: 'Reverse Linked List', topic: 'Linked list' },
-  { id: 'py_51', phase: 1, name: 'Majority Element', topic: 'Arrays' },
-  { id: 'py_35', phase: 1, name: 'Rearranging Fruits', topic: 'Greedy / hash' },
 
   // Phase 2 — subsets, backtracking, DP, greedy, cyclic sort, stacks
   { id: 'py_54', phase: 2, name: 'Subsets', topic: 'Subsets' },
   { id: 'py_14', phase: 2, name: 'Permutations', topic: 'Backtracking' },
-  { id: 'py_8', phase: 2, name: 'Combination Sum', topic: 'Backtracking' },
-  { id: 'py_15', phase: 2, name: 'Generate Parentheses', topic: 'Backtracking' },
-  { id: 'py_50', phase: 2, name: 'Find K-Sum Subsets', topic: 'Backtracking' },
-  { id: 'py_59', phase: 2, name: 'Restore IP Addresses', topic: 'Backtracking' },
-  { id: 'py_53', phase: 2, name: 'Split a String Into the Max Number of Unique Substrings', topic: 'Backtracking' },
   { id: 'py_28', phase: 2, name: 'Sudoku Solver', topic: 'Backtracking' },
   { id: 'py_11', phase: 2, name: 'House Robber', topic: 'Dynamic programming' },
   { id: 'py_16', phase: 2, name: 'Word Break', topic: 'Dynamic programming' },
-  { id: 'py_19', phase: 2, name: 'Decode Ways', topic: 'Dynamic programming' },
-  { id: 'py_13', phase: 2, name: 'Palindromic Substrings', topic: 'Dynamic programming' },
-  { id: 'py_3', phase: 2, name: 'Maximum Subarray', topic: 'DP / Kadane' },
   { id: 'py_31', phase: 2, name: 'Jump Game I', topic: 'Greedy' },
   { id: 'py_48', phase: 2, name: 'Cyclic Sort', topic: 'Cyclic sort' },
   { id: 'py_41', phase: 2, name: 'Daily Temperatures', topic: 'Stack' },
@@ -304,37 +290,18 @@ export const PYTHON_EXERCISES = [
   // Phase 3 — graphs, BFS/DFS, tries, hash maps, tracking
   { id: 'py_5', phase: 3, name: 'Number of Islands', topic: 'Graph BFS/DFS' },
   { id: 'py_17', phase: 3, name: 'Clone Graph', topic: 'Graph' },
-  { id: 'py_57', phase: 3, name: 'Flood Fill', topic: 'Graph DFS' },
-  { id: 'py_47', phase: 3, name: 'Rotting Oranges', topic: 'BFS' },
   { id: 'py_29', phase: 3, name: 'Word Ladder', topic: 'BFS' },
-  { id: 'py_22', phase: 3, name: 'Pacific Atlantic Water Flow', topic: 'Graph DFS' },
-  { id: 'py_23', phase: 3, name: 'Evaluate Division', topic: 'Graph' },
-  { id: 'py_61', phase: 3, name: 'Path with Maximum Probability', topic: 'Graph / Dijkstra' },
   { id: 'py_20', phase: 3, name: 'Find All Possible Recipes from Given Supplies', topic: 'Topological sort' },
   { id: 'py_38', phase: 3, name: 'Word Search II', topic: 'Trie' },
   { id: 'py_10', phase: 3, name: 'Group Anagrams', topic: 'Hash maps' },
-  { id: 'py_9', phase: 3, name: 'Encode and Decode Strings', topic: 'Strings / design' },
   { id: 'py_25', phase: 3, name: 'Product of Array Except Self', topic: 'Arrays / tracking' },
-  { id: 'py_42', phase: 3, name: 'Find All Duplicates in an Array', topic: 'Tracking' },
-  { id: 'py_63', phase: 3, name: 'Word Break II', topic: 'DP + backtracking' },
 
   // Phase 4 — bitwise, math, stacks, custom data structures, hard reviews
   { id: 'py_18', phase: 4, name: 'Counting Bits', topic: 'Bitwise' },
-  { id: 'py_34', phase: 4, name: 'Number of 1 Bits', topic: 'Bitwise' },
-  { id: 'py_36', phase: 4, name: 'Reverse Bits', topic: 'Bitwise' },
   { id: 'py_37', phase: 4, name: 'Sum of Two Integers', topic: 'Bitwise' },
-  { id: 'py_52', phase: 4, name: 'Number of Steps to Reduce a Binary Number to One', topic: 'Bitwise / math' },
-  { id: 'py_56', phase: 4, name: 'Find the Longest Substring Having Vowels in Even Counts', topic: 'Bitmask' },
   { id: 'py_39', phase: 4, name: 'Basic Calculator', topic: 'Stack / math' },
-  { id: 'py_49', phase: 4, name: 'Evaluate Reverse Polish Notation', topic: 'Stack' },
-  { id: 'py_55', phase: 4, name: 'Asteroid Collision', topic: 'Stack' },
-  { id: 'py_45', phase: 4, name: 'Minimum Remove to Make Valid Parentheses', topic: 'Stack' },
-  { id: 'py_58', phase: 4, name: 'Remove All Adjacent Duplicates In String', topic: 'Stack' },
   { id: 'py_43', phase: 4, name: 'Maximum Frequency Stack', topic: 'Custom data structure' },
-  { id: 'py_26', phase: 4, name: 'Reorganize String', topic: 'Heap / greedy' },
   { id: 'py_44', phase: 4, name: 'Minimum Operations to Make All Array Elements Equal', topic: 'Math / prefix sums' },
-  { id: 'py_32', phase: 4, name: 'Longest Palindromic Substring', topic: 'DP review' },
-  { id: 'py_24', phase: 4, name: 'Minimum Window Subsequence', topic: 'Two pointers (hard)' },
 ];
 
 // ============================================================
@@ -473,6 +440,7 @@ export const PROJECTS = [
 export const REVIEW_ITEMS = [
   { id: 'rev_p1_gh', phase: 1, name: 'GitHub profile pass', desc: 'Profile README, pinned repos, green squares from the C# project.' },
   { id: 'rev_p2_pat', phase: 2, name: 'Redo 3 Phase-1 patterns cold', desc: 'No notes, timed. Retention is engineered, not assumed.' },
+  { id: 'rev_p2_repo', phase: 2, name: 'Debug and extend an unfamiliar repo', desc: 'Clone something you did not write, find a real bug or open issue, fix it, add a test. Every other coding rep in this plan is greenfield and solo; the AI-assisted rounds now shipping at Google and Meta are about reading and correcting code you did not write.' },
   { id: 'rev_p3_pat', phase: 3, name: 'Redo 3 Phase-2 patterns cold', desc: 'No notes, timed.' },
   { id: 'rev_p3_star', phase: 3, name: 'STAR story bank — first 4 stories', desc: 'From your own work history, written down, using the behavioral course structure.' },
   { id: 'rev_p4_pat', phase: 4, name: 'Redo 4 random patterns cold', desc: 'Any phase, timed, no notes.' },
@@ -489,13 +457,13 @@ export const REVIEW_ITEMS = [
 
 export const MOCK_TARGETS = {
   1: { sd: 4, coding: 4 },
-  2: { sd: 6, coding: 6, lld: 2 },
-  3: { sd: 6, coding: 6, lld: 3, sql: 2 },
-  4: { sd: 8, coding: 6, lld: 4, ai: 4 },
+  2: { sd: 6, coding: 6, lld: 2, aiCode: 1 },
+  3: { sd: 6, coding: 6, lld: 3, sql: 2, aiCode: 2 },
+  4: { sd: 8, coding: 4, lld: 4, ai: 4, aiCode: 3 },
 };
 
 export const MOCK_TYPE_LABELS = {
-  sd: 'Sys Design', coding: 'Coding', lld: 'LLD', sql: 'SQL', ai: 'GenAI',
+  sd: 'Sys Design', coding: 'Coding', lld: 'LLD', sql: 'SQL', ai: 'GenAI', aiCode: 'AI-Assisted',
 };
 
 // ============================================================
@@ -546,7 +514,7 @@ export const EXIT_CRITERIA = {
 export const WEEKLY_CADENCE = {
   1: { coding: 4, design: 3.5, systemDesign: 2.5, labs: 1, mocks: 0.5, total: 11.5 },
   2: { coding: 3.5, systemDesign: 3, frontend: 2, ai: 1.5, labs: 1, mocks: 1, total: 12 },
-  3: { coding: 3, data: 3, ai: 2, systemDesign: 1.5, labs: 1, mocks: 1.5, total: 12 },
+  3: { coding: 2.5, data: 3, ai: 2, systemDesign: 2, labs: 1, mocks: 1.5, total: 12 },
   4: { coding: 2, lld: 2.5, systemDesign: 2.5, ai: 2, mocks: 3, total: 12 },
 };
 
