@@ -9,8 +9,8 @@ export const PHASES = [
   {
     n: 1, name: 'Core Foundations', months: 'Months 1-3',
     color: '#d4ac2c', accent: '#e8c15a',
-    focus: 'C# deep dive · System Design fundamentals · Patterns 1-9 · AWS basics',
-    summary: 'A language is the substrate everything else runs on. Build coding fluency, learn how big systems are shaped, and ship your first public project.',
+    focus: 'OOD & SOLID · System Design fundamentals · Patterns 1-9 · AWS basics',
+    summary: 'You already write C#; what pays now is designing with it. Learn to apply the OO principles deliberately, learn how big systems are shaped, and ship a public project whose design you can defend.',
   },
   {
     n: 2, name: 'Systems, Frontend & AI Foundations', months: 'Months 4-6',
@@ -43,25 +43,31 @@ export const PHASES = [
 export const COURSES = [
   // ---------- Phase 1 ----------
   {
-    id: 'csharp',
-    name: 'Mastering C# for .NET Developers',
-    url: 'https://www.educative.io/courses/c-sharp-for-dot-net-developers',
-    hours: 16, phase: 1, track: 'Language', weeklyHours: '3-4h',
-    note: 'The foreground course of Phase 1. Reflection & Dynamic Binding are optional — skip if time-pressed.',
+    id: 'lld',
+    name: 'Grokking LLD Interview (OOD Principles)',
+    url: 'https://www.educative.io/courses/grokking-the-low-level-design-interview-using-ood-principles',
+    hours: 20, phase: 1, track: 'Design', weeklyHours: '3-4h',
+    note: 'The foreground course of Phase 1. Syntax was never the hard part — applying the principles is, and this is where that gets taught. The 14 design problems are tracked in the Design sections of Phases 1-4.',
     modules: [
-      { id: 'cs_m1', name: 'C# basics' },
-      { id: 'cs_m2', name: 'Classes & OOP I' },
-      { id: 'cs_m3', name: 'Classes & OOP II' },
-      { id: 'cs_m4', name: 'Exception handling' },
+      { id: 'lld_m1', name: 'OOP basics refresher' },
+      { id: 'lld_m2', name: 'SOLID principles' },
+      { id: 'lld_m5', name: 'Creational patterns' },
+      { id: 'lld_m6', name: 'Structural patterns' },
+      { id: 'lld_m7', name: 'Behavioral patterns' },
+      { id: 'lld_m4', name: 'UML & class diagrams' },
+    ],
+  },
+  {
+    id: 'csharp',
+    name: 'Mastering C# for .NET Developers (gap skim)',
+    url: 'https://www.educative.io/courses/c-sharp-for-dot-net-developers',
+    hours: 4, phase: 1, track: 'Language', weeklyHours: '0-1h',
+    note: 'Optional, unscheduled, and not an exit criterion — you already write C#. Only the modules that do not carry over from prior C#/Java work are listed; clear them when the project actually needs them.',
+    modules: [
       { id: 'cs_m5', name: 'Delegates & Events' },
-      { id: 'cs_m6', name: 'Interfaces' },
-      { id: 'cs_m7', name: 'Collections' },
       { id: 'cs_m8', name: 'LINQ' },
-      { id: 'cs_m9', name: 'Strings & Dates' },
       { id: 'cs_m10', name: 'Multithreading & Async' },
-      { id: 'cs_m11', name: 'Reflection (optional)' },
       { id: 'cs_m12', name: 'Garbage Collection' },
-      { id: 'cs_m13', name: 'Dynamic Binding (optional)' },
     ],
   },
   {
@@ -233,20 +239,6 @@ export const COURSES = [
       { id: 'aic_m4', name: 'Agentic architectures' },
     ],
   },
-  {
-    id: 'lld',
-    name: 'Grokking LLD Interview (OOD Principles)',
-    url: 'https://www.educative.io/courses/grokking-the-low-level-design-interview-using-ood-principles',
-    hours: 20, phase: 4, track: 'LLD', weeklyHours: '2-3h',
-    note: 'Theory modules here; the 14 design problems are tracked in the Design sections of Phases 2-4. Start the reading in late Phase 2.',
-    modules: [
-      { id: 'lld_m1', name: 'OOP basics refresher' },
-      { id: 'lld_m2', name: 'SOLID principles' },
-      { id: 'lld_m3', name: 'Design patterns overview' },
-      { id: 'lld_m4', name: 'UML & class diagrams' },
-    ],
-  },
-
   // ---------- Ongoing (every phase page) ----------
   {
     id: 'coding_patterns',
@@ -425,7 +417,7 @@ export const CLOUD_LABS = [
 // ============================================================
 
 export const LLD_PROBLEMS = [
-  { id: 'lld1', name: 'Parking Lot', phase: 2 }, { id: 'lld2', name: 'Vending Machine', phase: 2 },
+  { id: 'lld1', name: 'Parking Lot', phase: 1 }, { id: 'lld2', name: 'Vending Machine', phase: 2 },
   { id: 'lld3', name: 'Movie Ticket Booking', phase: 3 }, { id: 'lld4', name: 'Car Rental System', phase: 3 },
   { id: 'lld5', name: 'ATM', phase: 3 }, { id: 'lld6', name: 'Chess Game', phase: 3 },
   { id: 'lld7', name: 'Hotel Management', phase: 4 }, { id: 'lld8', name: 'Amazon Online Shopping', phase: 4 },
@@ -455,7 +447,7 @@ export const PROJECTS = [
   {
     id: 'proj1', phase: 1,
     name: 'Ship a C# project to GitHub',
-    desc: 'RPG Combat Engine or Cash Flow Manager from the C# course — public repo, real README, tests. Done = a stranger could clone and run it.',
+    desc: 'Your own app (RPG combat engine, cash-flow manager, anything with real domain rules) — public repo, tests, README. Done = a stranger could clone and run it, the class design was decided before the code, and the README explains which SOLID trade-offs you made and why.',
   },
   {
     id: 'proj2', phase: 2,
@@ -514,8 +506,9 @@ export const MOCK_TYPE_LABELS = {
 export const EXIT_CRITERIA = {
   1: [
     { id: 'x1_pat', type: 'patterns', label: 'Patterns 1-9 complete' },
-    { id: 'x1_cs', type: 'course', course: 'csharp', min: 75, label: 'C# course ≥ 75%' },
+    { id: 'x1_ood', type: 'course', course: 'lld', min: 75, label: 'OOD/LLD course ≥ 75% (SOLID + patterns)' },
     { id: 'x1_sdf', type: 'course', course: 'sd_fund', min: 100, label: 'System Design Fundamentals 100%' },
+    { id: 'x1_lld', type: 'design-lld', min: 1, label: '≥ 1 LLD problem written up' },
     { id: 'x1_proj', type: 'project', project: 'proj1', label: 'C# project shipped publicly' },
     { id: 'x1_mocks', type: 'mocks', label: 'Mock targets met (4 SD + 4 coding)' },
   ],
@@ -551,7 +544,7 @@ export const EXIT_CRITERIA = {
 // ============================================================
 
 export const WEEKLY_CADENCE = {
-  1: { coding: 4, language: 3.5, systemDesign: 2.5, labs: 1, mocks: 0.5, total: 11.5 },
+  1: { coding: 4, design: 3.5, systemDesign: 2.5, labs: 1, mocks: 0.5, total: 11.5 },
   2: { coding: 3.5, systemDesign: 3, frontend: 2, ai: 1.5, labs: 1, mocks: 1, total: 12 },
   3: { coding: 3, data: 3, ai: 2, systemDesign: 1.5, labs: 1, mocks: 1.5, total: 12 },
   4: { coding: 2, lld: 2.5, systemDesign: 2.5, ai: 2, mocks: 3, total: 12 },
@@ -559,9 +552,9 @@ export const WEEKLY_CADENCE = {
 
 export const DAILY_RHYTHM = {
   1: [
-    { day: 'Mon', plan: 'C# (1.5h) + System Design Fundamentals (1h)' },
+    { day: 'Mon', plan: 'OOD & SOLID (1.5h) + System Design Fundamentals (1h)' },
     { day: 'Tue', plan: 'Coding Patterns (1.5h) + Python exercises (0.5h)' },
-    { day: 'Wed', plan: 'C# (1.5h) + System Design Fundamentals (1h)' },
+    { day: 'Wed', plan: 'OOD & SOLID (1.5h) + System Design Fundamentals (1h)' },
     { day: 'Thu', plan: 'Coding Patterns (1.5h) + Python exercises (0.5h)' },
     { day: 'Fri', plan: 'Cloud Lab (1h) + C# project work (1h)' },
     { day: 'Sat', plan: 'Mock interview (1h) + review week notes (0.5h)' },

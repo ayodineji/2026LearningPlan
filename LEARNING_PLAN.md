@@ -18,12 +18,12 @@ Four 3-month phases. Each phase page in the dashboard shows everything the phase
 
 | Phase | Months | Theme | Foreground | AI track |
 |-------|--------|-------|-----------|----------|
-| **1 · Core Foundations** | 1–3 | Coding fluency + a real language | C#, SD Fundamentals, Patterns 1–9 | — |
+| **1 · Core Foundations** | 1–3 | Coding fluency + designing with objects | OOD/SOLID, SD Fundamentals, Patterns 1–9 | — |
 | **2 · Systems, Frontend & AI Foundations** | 4–6 | Big systems + frontend + how LLMs work | Modern SD, TS + React, Patterns 10–18 | LLM Essentials |
 | **3 · Data & Applied AI** | 7–9 | SQL, pipelines, retrieval | SQL Patterns, Data Engineering, Patterns 19–24 | RAG with LangChain |
-| **4 · Interview Mastery & Forward Look** | 10–12 | Rehearsal + GenAI design | LLD, advanced SD, mock marathon, Patterns 25–28 | GenAI SD, Agentic SD, AI crash course |
+| **4 · Interview Mastery & Forward Look** | 10–12 | Rehearsal + GenAI design | LLD problems, advanced SD, mock marathon, Patterns 25–28 | GenAI SD, Agentic SD, AI crash course |
 
-**Why this ordering**: a language (Phase 1) is the substrate everything else runs on. System design (Phase 2) is the highest-variance interview topic and gets the longest exposure; the AI track starts there with fundamentals so that Phase 3 can *build* with LLMs (RAG over real pipelines) and Phase 4 can *design* with them (GenAI/agentic system design — the forward-looking interview category). Phase 4 adds almost no other new material: the job is consolidation and rehearsal.
+**Why this ordering**: design is the substrate everything else runs on (Phase 1). Syntax is not the bottleneck for someone who already ships in C# and Java — deciding where responsibilities live is, so the OOD/SOLID course moved from Phase 4 to the front. That also fixes an ordering problem: LLD write-ups start early and now have a course behind them instead of arriving two phases late. The C# course stays only as an optional gap skim (delegates, LINQ, async, GC) with no exit criterion attached. System design (Phase 2) is the highest-variance interview topic and gets the longest exposure; the AI track starts there with fundamentals so that Phase 3 can *build* with LLMs (RAG over real pipelines) and Phase 4 can *design* with them (GenAI/agentic system design — the forward-looking interview category). Phase 4 adds almost no other new material: the job is consolidation and rehearsal.
 
 ### Ongoing tracks (never rotate out)
 
@@ -34,7 +34,7 @@ Four 3-month phases. Each phase page in the dashboard shows everything the phase
 
 Courses get you skills; **public artifacts get you hired**. Each phase has exactly one project, tracked as a first-class item with the same weight as a course:
 
-1. **Phase 1** — C# project (RPG Combat Engine or Cash Flow Manager) shipped to GitHub: public repo, real README, tests.
+1. **Phase 1** — A C# app of your own shipped to GitHub: public repo, real README, tests. Design-led — the class design gets decided before the code, and the README explains which SOLID trade-offs you made and why. The project is where the principles get applied, not just read.
 2. **Phase 2** — A deployed TypeScript/React app that calls an LLM API. Exercises the frontend stack and the LLM fundamentals together.
 3. **Phase 3** — A data pipeline + RAG over your own dataset. The data-engineering and RAG courses converge here.
 4. **Phase 4** — An agentic capstone (an agent using tools, e.g. against the Phase 3 data) + final portfolio polish.
@@ -43,7 +43,7 @@ Courses get you skills; **public artifacts get you hired**. Each phase has exact
 
 A phase isn't done because the calendar says so. The dashboard computes these live from your checkboxes and shows them at the top of each phase page:
 
-- **Phase 1 → 2**: Patterns 1–9 ✓ · C# ≥ 75% · SD Fundamentals 100% · project shipped · mock targets met (4 SD + 4 coding)
+- **Phase 1 → 2**: Patterns 1–9 ✓ · OOD/LLD ≥ 75% · SD Fundamentals 100% · ≥ 1 LLD write-up · project shipped · mock targets met (4 SD + 4 coding)
 - **Phase 2 → 3**: Patterns 10–18 ✓ · TypeScript ≥ 75% · LLM Essentials ✓ · ≥ 4 SD cases written up · LLM app deployed · mock targets met
 - **Phase 3 → 4**: Patterns 19–24 ✓ · SQL 100% · RAG course ✓ · behavioral course + first STAR stories ✓ · pipeline+RAG project deployed · mock targets met
 - **Phase 4 done**: All 28 patterns ✓ · GenAI SD complete · ≥ 10 LLD + ≥ 10 SD write-ups (cumulative) · capstone shipped · career items done · mock targets met
@@ -130,7 +130,7 @@ Interview skill without market contact is theory. Built into the plan:
 - [ ] All 4 phases passed their exit criteria
 - [ ] Mock targets met every phase (incl. 4 GenAI mocks)
 - [ ] ≥ 10 LLD + ≥ 10 system-design write-ups
-- [ ] **4 shipped, public projects** — C# app, LLM-powered web app, pipeline + RAG, agentic capstone
+- [ ] **4 shipped, public projects** — C# app (design-led), LLM-powered web app, pipeline + RAG, agentic capstone
 - [ ] STAR bank, refreshed resume, 5 calibration applications submitted
 - [ ] An exported `grind-{date}.sqlite` snapshot stored off-device
 
